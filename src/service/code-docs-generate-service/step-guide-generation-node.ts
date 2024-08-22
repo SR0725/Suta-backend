@@ -5,32 +5,43 @@ import agent from "./agent";
 import yUpsertLLMHistory from "./y-upsert-llm-history";
 
 const nodeName = "stepGuideGeneration";
-const prompt = `你是一个 AI 程式設計導師，旨在一步步地指導使用者學習編程。你的任務是分析完整目標代碼與當前進度之間的差異，然後提供用戶應該採取的下一步邏輯步驟。
-分析完整代碼與當前進度之間的差異。確定用戶應該採取的下一步邏輯步驟，以便更接近完整代碼。此步驟應該是：
+const prompt = `
+你是一个 AI 程式設計導師，旨在一步步地指導使用者學習程式。
+你將被授予完整的目標程式碼，以及使用者目前的進度。
+你的目的是指導用戶完成目標程式碼，你需要給予一個明確的指導方針來告知用戶該怎麼修改
+也就是下一步該怎麼走，以便更接近完整代碼，此步驟應該是：
 1. 清晰且具體
 2. 能夠在一次迭代中完成
-3. 修改的代碼行數不超過 20 行
+3. 每一步只專注於一個概念或功能
+4. 修改的程式碼行數不超過 20 行
 
-在提供下一步時，請遵循以下指導方針：
-1. 一次專注於一個概念或功能
-2. 提供此步驟的重要性簡短解釋
-3. 如果介紹新的編程概念，請簡要說明
-4. 避免給出整個解決方案
-5. 如果此為整個教學的最終一步，請填入 isLastStep: true
+基於上述任務，請反饋以下：
+1. 請提供此步驟的具體解決項目
+2. 請解釋此步驟的重要性與功能、發生變化，基本上就是指導與教學
+3. 最後請判定此是否已完成目標
+4. 所有的技術名詞僅使用台灣用語
+
+另外為了方便程式架構的設計，請順便指出下一步驟的大概修改方向
+指出在本步驟完成後，下一步驟應該怎麼修改
+
 最後以以下 JSON 格式輸出
 """
 {
-  "isLastStep"?: Boolean,
-  "instruction": "<給出清晰、簡明的指示，告訴使用者接下來應該做什麼。字數盡量在 100 字內",
-  "explanation": "<提供下一步的簡短解釋以及其重要性。>"
+  "instruction": "<給出清晰、簡明的指示，告訴使用者接下來應該做什麼。",
+  "explanation": "<本步驟的指導與教學>",
+  "nextStepDirection": "<下一步的修改方向，僅供程式架構設計參考>",
+  "isLastStep"?: <請判定此是否已完成目標，應當填入 true 或 false>
 }
 """
-請記住，你的目標是引導使用者通過學習過程，而不是簡單地提供完整的解決方案。鼓勵理解和逐步進展，而不是僅僅複製。`;
+請記住，你的目標是引導使用者通過學習過程。鼓勵理解和逐步進展目標程式碼。
+請不要給予任何超出目標的指示，如果已經完成目標，請直接結束
+`;
 
 const requestPromptTemplate = (
   fullCode: string,
   currentCode: string,
-  lastStepInstruction: string
+  lastStepInstruction: string,
+  nextStepDirection: string
 ) => {
   return `以下是使用者正在努力實現的完整代碼：
 <complete_code> 
@@ -42,17 +53,29 @@ ${fullCode}
 ${currentCode}
 </current_progress>
 
-以下是使用者上一步的指示：
+${
+  lastStepInstruction &&
+  `以下是使用者上一步所被指引的指示：
 <last_step_guide> 
 ${lastStepInstruction}
-</last_step_guide>
-  `;
+</last_step_guide>`
+}
+
+${
+  nextStepDirection &&
+  `這個本步驟的大致修改方向
+你可以參考這個方向，撰寫完整的修改方式
+<next_step_direction> 
+${nextStepDirection}
+</next_step_direction>`
+}`;
 };
 
 const responseSchema = z.object({
   isLastStep: z.boolean().optional(),
   instruction: z.string(),
   explanation: z.string(),
+  nextStepDirection: z.string(),
 });
 
 interface StepGuideGenerationOptions {
@@ -60,6 +83,8 @@ interface StepGuideGenerationOptions {
   fullCode: string;
   currentCode: string;
   lastStepInstruction: string;
+  nextStepDirection: string;
+  stepIndex: number;
 }
 
 async function createStepGuideGenerationNode({
@@ -67,9 +92,17 @@ async function createStepGuideGenerationNode({
   fullCode,
   currentCode,
   lastStepInstruction,
+  nextStepDirection,
+  stepIndex,
 }: StepGuideGenerationOptions) {
   try {
     const llmHistoryId = randomUUID();
+    const input = requestPromptTemplate(
+      fullCode,
+      currentCode,
+      lastStepInstruction,
+      nextStepDirection
+    );
     // 生成標題和描述
     const response = await agent<z.infer<typeof responseSchema>>({
       prompt,
@@ -77,11 +110,7 @@ async function createStepGuideGenerationNode({
       messages: [
         {
           role: "user",
-          content: requestPromptTemplate(
-            fullCode,
-            currentCode,
-            lastStepInstruction
-          ),
+          content: input,
         },
       ],
       handleGenerate: (newContent) => {
@@ -90,16 +119,23 @@ async function createStepGuideGenerationNode({
           nodeType: nodeName,
           llmHistoryId,
           newContent,
+          prompt,
+          input,
+          stepIndex,
         });
       },
     });
 
     return {
       response,
+
       llmHistory: {
         id: llmHistoryId,
         nodeType: nodeName,
         response: JSON.stringify(response),
+        prompt,
+        input,
+        stepIndex,
       },
     };
   } catch (error) {

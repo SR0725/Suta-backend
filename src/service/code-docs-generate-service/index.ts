@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import getCodeDocsById from "@/repositories/code-docs/get-code-docs-by-id";
 import updateCodeDocs from "@/repositories/code-docs/update-code-docs";
 import createCRDTDoc, { CRDTDoc } from "@/utils/crdt-doc";
-import createComplexStepNode from "./complex-step-node";
+import createEntireStepNode from "./entire-step-node";
 import createInitialCodeArchitectureNode from "./initial-code-architecture-node";
 import createInitialPurposeNode from "./initial-purpose-node";
 
@@ -26,8 +26,8 @@ async function startNodes(docsId: string, code: string, crdtDoc: CRDTDoc) {
     throw new Error("Initial code not found");
   }
 
-  // 迴圈步驟
-  await createComplexStepNode({
+  // 創建全部步驟
+  await createEntireStepNode({
     docsId,
     fullCode: code,
     startCode: initialCode,

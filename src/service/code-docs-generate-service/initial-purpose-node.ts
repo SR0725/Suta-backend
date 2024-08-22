@@ -59,6 +59,8 @@ async function createInitialPurposeNode({
           nodeType: nodeName,
           llmHistoryId,
           newContent,
+          prompt,
+          input: code,
         });
       },
     });
@@ -78,6 +80,8 @@ async function createInitialPurposeNode({
           id: llmHistoryId,
           nodeType: nodeName,
           response: JSON.stringify(response),
+          prompt,
+          input: code,
         },
       ],
     });

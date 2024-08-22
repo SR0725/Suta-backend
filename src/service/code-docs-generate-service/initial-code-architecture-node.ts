@@ -67,15 +67,19 @@ async function createInitialCodeArchitectureNode({
           nodeType: nodeName,
           llmHistoryId,
           newContent,
+          prompt,
+          input: code,
         });
         const yText = yDoc.getText(nodeName);
         yText.insert(yText.length, newContent);
       },
     });
+
     // 完成後，更新 ydoc 的 card
     const card: CodeStepCard = {
       type: "codeStep",
       id: cardId,
+      stepIndex: 0,
       description: "初始程式碼架構",
       conclusion: "",
       codeLines: response.code.split("\n").map((line) => ({
@@ -103,6 +107,8 @@ async function createInitialCodeArchitectureNode({
           nodeType: nodeName,
           response: JSON.stringify(response),
           targetCardId: cardId,
+          prompt,
+          input: code,
         },
       ],
     });

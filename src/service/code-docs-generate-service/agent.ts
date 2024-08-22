@@ -6,27 +6,32 @@ import { createOpenAI } from "@/utils/openai";
 interface AgentProps<T> {
   prompt: string;
   messages: ChatCompletionMessageParam[];
-  responseSchema: z.ZodType<T>;
+  responseSchema?: z.ZodType<T>;
   handleGenerate: (newContent: string) => void;
   model?: string;
   maxTokens?: number;
 }
 
-async function agent<T>({
+async function agent<T = string>({
   prompt,
   messages,
   responseSchema,
   handleGenerate,
-  model = "gpt-4o",
+  model = "gpt-4o-mini",
   maxTokens = 4096,
-}: AgentProps<T>) {
+}: AgentProps<T>): Promise<T> {
   const client = createOpenAI();
   const stream = await client.chat.completions.create({
     model: model,
     messages: [{ role: "system", content: prompt }, ...messages],
     max_tokens: maxTokens,
+    temperature: 0.2,
     stream: true,
-    response_format: zodResponseFormat(responseSchema, "response-format"),
+    ...(responseSchema
+      ? {
+          response_format: zodResponseFormat(responseSchema, "response-format"),
+        }
+      : {}),
   });
 
   let resultContent = "";
@@ -35,7 +40,9 @@ async function agent<T>({
     resultContent += content;
     handleGenerate(content);
   }
-  return responseSchema.parse(JSON.parse(resultContent)) as T;
+  return responseSchema
+    ? responseSchema.parse(JSON.parse(resultContent))
+    : (resultContent as T);
 }
 
 export default agent;

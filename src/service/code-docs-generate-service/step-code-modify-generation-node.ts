@@ -1,82 +1,58 @@
 import { randomUUID } from "crypto";
+import { diffLines } from "diff";
 import * as Y from "yjs";
 import { z } from "zod";
-import { LLMHistory } from "@/models/code-docs";
+import { CodeLine } from "@/models/code-docs";
 import agent from "./agent";
-import applyCodeModify from "./apply-code-modify";
 import yUpsertLLMHistory from "./y-upsert-llm-history";
 
 const nodeName = "stepCodeModifyGeneration";
-const prompt = `您是一名 AI 編程導師，旨在逐步指導用戶學習編程。您的任務是分析完整代碼（學習目標）和當前進度之間的差異，然後根據給定的指南提供下一步的修改指示。
-分析完整代碼和當前進度之間的差異。重點是根據修改指南實施下一步所需的變更。
-根據您的分析，創建一個 JSON 響應，指定要添加、修改或刪除的代碼。響應應遵循以下結構：
+const prompt = `你是一個程式碼工程師
+你將被授予完整的目標程式碼，以及目前你已經寫的程式碼。
+你同時也會拿到一個程式碼修改指南
+你需要根據修改指南，修改當前進度的程式碼，最終使其趨近於完整程式碼
+請遵守以下規則：
+1. 請只做出修改指南提到的修改
+2. 程式碼的使用上，請盡量遵循目標程式碼
+3. 確保生成的代碼在語法上正確，並符合修改指南需求。
+4. 最後以以下 JSON 格式輸出
 """
 {
-  "addCodes": [{
-    "insertAfter": number,
-    "code": "string"
-  }],
-  "modifyCodes": [{
-    "modifyStartLine": number,
-    "modifyEndLine": number,
-    "code": "string"
-  }]
+  "code": "<程式碼>"
 }
-"""
-其中：
-"addCodes" 指定了要在特定行號後插入的新代碼。
-"modifyCodes" 指定了要修改的代碼，包括修改的起始行號和結束行號以及要替換的新增代碼。
-確保您的修改：
-1. 完全符合修改指南中的要求。
-2. 參考完整代碼以保持一致性，避免編造不存在的代碼。
-3. 只進行必要的更改以從當前狀態過渡到下一步。
-4. 保持現有代碼的整體結構和風格。
-如果某個類別（addCodes 或 modifyCodes）不需要修改，請為該類別包含一個空數組
-
-`;
+"""`;
 
 const requestPromptTemplate = (
   fullCode: string,
   currentCode: string,
-  stepInstruction: string
+  stepInstruction: string,
+  nextStepDirection: string
 ) => {
-  return `以下是使用者正在努力實現的完整代碼：
+  return `以下是完整的目標程式碼：
 <complete_code> 
-${fullCode
-  .split("\n")
-  .map((line, index) => `${index + 1}. ${line}`)
-  .join("\n")}
+${fullCode}
 </complete_code>
 
-以下是使用者代碼的當前進度：
+以下是當前進度：
 <current_progress> 
-${currentCode
-  .split("\n")
-  .map((line, index) => `${index + 1}. ${line}`)
-  .join("\n")}
+${currentCode}
 </current_progress>
 
 以下是本步驟的修改指南：
-<last_step_guide> 
+<step_guide> 
 ${stepInstruction}
-</last_step_guide>
+</step_guide>
+
+以下是下一步驟的參考，請注意，這個指南僅供下一步使用
+僅供架構設計參考用，請不要將這個指南用於本步驟的修改
+<next_step_direction> 
+${nextStepDirection}
+</next_step_direction>
   `;
 };
 
 const responseSchema = z.object({
-  addCodes: z.array(
-    z.object({
-      insertAfter: z.number(),
-      code: z.string(),
-    })
-  ),
-  modifyCodes: z.array(
-    z.object({
-      modifyStartLine: z.number(),
-      modifyEndLine: z.number(),
-      code: z.string(),
-    })
-  ),
+  code: z.string(),
 });
 
 interface StepCodeModifyGenerationOptions {
@@ -84,6 +60,8 @@ interface StepCodeModifyGenerationOptions {
   fullCode: string;
   currentCode: string;
   stepInstruction: string;
+  nextStepDirection: string;
+  stepIndex: number;
 }
 
 async function createStepCodeModifyGenerationNode({
@@ -91,9 +69,17 @@ async function createStepCodeModifyGenerationNode({
   fullCode,
   currentCode,
   stepInstruction,
+  nextStepDirection,
+  stepIndex,
 }: StepCodeModifyGenerationOptions) {
   try {
     const llmHistoryId = randomUUID();
+    const input = requestPromptTemplate(
+      fullCode,
+      currentCode,
+      stepInstruction,
+      nextStepDirection
+    );
     // 生成標題和描述
     const response = await agent<z.infer<typeof responseSchema>>({
       prompt,
@@ -101,11 +87,7 @@ async function createStepCodeModifyGenerationNode({
       messages: [
         {
           role: "user",
-          content: requestPromptTemplate(
-            fullCode,
-            currentCode,
-            stepInstruction
-          ),
+          content: input,
         },
       ],
       handleGenerate: (newContent) => {
@@ -114,17 +96,37 @@ async function createStepCodeModifyGenerationNode({
           nodeType: nodeName,
           llmHistoryId,
           newContent,
+          prompt,
+          input,
+          stepIndex,
         });
       },
     });
 
-    const newCodeLines = applyCodeModify(currentCode, response);
+    const newCode = response.code;
+    const differences = diffLines(currentCode, newCode);
+
+    const newCodeLines = differences.reduce((acc, diff) => {
+      acc.push(
+        ...diff.value.split("\n").map((line) => ({
+          text: line,
+          added: diff.added,
+          removed: diff.removed,
+        }))
+      );
+      return acc;
+    }, [] as CodeLine[]);
+
     return {
       newCodeLines,
+      newCode: newCode,
       llmHistory: {
         id: llmHistoryId,
         nodeType: nodeName,
         response: JSON.stringify(response),
+        prompt,
+        input,
+        stepIndex,
       },
     };
   } catch (error) {
