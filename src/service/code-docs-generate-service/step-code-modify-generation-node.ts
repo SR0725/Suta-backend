@@ -16,9 +16,15 @@ const prompt = `你是一個程式碼工程師
 2. 程式碼的使用上，請盡量遵循目標程式碼
 3. 確保生成的代碼在語法上正確，並符合修改指南需求。
 4. 最後以以下 JSON 格式輸出
+
+另外請撰寫這個步驟的指導與教學
+1. 請需要針對有修改的程式碼做教學與解釋
+2. 教學應當簡單易懂，善用譬喻，想像你在對國中生解釋一般
+3. 盡量簡潔、直接，限制在 100 字內
 """
 {
-  "code": "<程式碼>"
+  "code": "<程式碼>",
+  "explanation": "<本步驟的指導與教學，可以使用 markdown 格式>"
 }
 """`;
 
@@ -53,6 +59,7 @@ ${nextStepDirection}
 
 const responseSchema = z.object({
   code: z.string(),
+  explanation: z.string(),
 });
 
 interface StepCodeModifyGenerationOptions {
@@ -120,6 +127,7 @@ async function createStepCodeModifyGenerationNode({
     return {
       newCodeLines,
       newCode: newCode,
+      explanation: response.explanation,
       llmHistory: {
         id: llmHistoryId,
         nodeType: nodeName,

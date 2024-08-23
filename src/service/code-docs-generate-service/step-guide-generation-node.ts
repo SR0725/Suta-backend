@@ -17,22 +17,22 @@ const prompt = `
 
 基於上述任務，請反饋以下：
 1. 請提供此步驟的具體解決項目
-2. 請解釋此步驟的重要性與功能、發生變化，基本上就是指導與教學
-3. 最後請判定此是否已完成目標
-4. 所有的技術名詞僅使用台灣用語
+2. 最後請判定此是否已完成目標
+3. 所有的技術名詞僅使用台灣用語 繁體中文
 
 另外為了方便程式架構的設計，請順便指出下一步驟的大概修改方向
 指出在本步驟完成後，下一步驟應該怎麼修改
+
 
 最後以以下 JSON 格式輸出
 """
 {
   "instruction": "<給出清晰、簡明的指示，告訴使用者接下來應該做什麼。",
-  "explanation": "<本步驟的指導與教學>",
   "nextStepDirection": "<下一步的修改方向，僅供程式架構設計參考>",
   "isLastStep"?: <請判定此是否已完成目標，應當填入 true 或 false>
 }
 """
+
 請記住，你的目標是引導使用者通過學習過程。鼓勵理解和逐步進展目標程式碼。
 請不要給予任何超出目標的指示，如果已經完成目標，請直接結束
 `;
@@ -74,7 +74,6 @@ ${nextStepDirection}
 const responseSchema = z.object({
   isLastStep: z.boolean().optional(),
   instruction: z.string(),
-  explanation: z.string(),
   nextStepDirection: z.string(),
 });
 

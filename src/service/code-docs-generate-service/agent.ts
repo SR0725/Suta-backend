@@ -10,16 +10,21 @@ interface AgentProps<T> {
   handleGenerate: (newContent: string) => void;
   model?: string;
   maxTokens?: number;
+  retryTimes?: number;
+  _alreadyRetryTimes?: number;
 }
 
-async function agent<T = string>({
-  prompt,
-  messages,
-  responseSchema,
-  handleGenerate,
-  model = "gpt-4o-mini",
-  maxTokens = 4096,
-}: AgentProps<T>): Promise<T> {
+async function agent<T = string>(props: AgentProps<T>): Promise<T> {
+  const {
+    prompt,
+    messages,
+    responseSchema,
+    handleGenerate,
+    model = "gpt-4o-mini",
+    maxTokens = 4096,
+    retryTimes = 3,
+    _alreadyRetryTimes = 0,
+  } = props;
   const client = createOpenAI();
   const stream = await client.chat.completions.create({
     model: model,
@@ -40,9 +45,17 @@ async function agent<T = string>({
     resultContent += content;
     handleGenerate(content);
   }
-  return responseSchema
-    ? responseSchema.parse(JSON.parse(resultContent))
-    : (resultContent as T);
+
+  try {
+    return responseSchema
+      ? responseSchema.parse(JSON.parse(resultContent))
+      : (resultContent as T);
+  } catch (error) {
+    if (_alreadyRetryTimes < retryTimes) {
+      return agent<T>({ ...props, _alreadyRetryTimes: _alreadyRetryTimes + 1 });
+    }
+    throw error;
+  }
 }
 
 export default agent;

@@ -65,7 +65,7 @@ async function createStepNode({
     id: stepId,
     type: "codeStep",
     stepIndex: stepIndex,
-    description: `${stepGuideNodeResult.response.instruction}\n${stepGuideNodeResult.response.explanation}`,
+    description: updatedCodeNodeResult.explanation,
     conclusion: "",
     codeLines: updatedCodeNodeResult.newCodeLines,
     preview: null,
