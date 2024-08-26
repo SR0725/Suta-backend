@@ -68,6 +68,7 @@ interface StepCodeModifyGenerationOptions {
   currentCode: string;
   stepInstruction: string;
   nextStepDirection: string;
+  isLastStep: boolean;
   stepIndex: number;
 }
 
@@ -77,6 +78,7 @@ async function createStepCodeModifyGenerationNode({
   currentCode,
   stepInstruction,
   nextStepDirection,
+  isLastStep,
   stepIndex,
 }: StepCodeModifyGenerationOptions) {
   try {
@@ -88,27 +90,32 @@ async function createStepCodeModifyGenerationNode({
       nextStepDirection
     );
     // 生成標題和描述
-    const response = await agent<z.infer<typeof responseSchema>>({
-      prompt,
-      responseSchema,
-      messages: [
-        {
-          role: "user",
-          content: input,
-        },
-      ],
-      handleGenerate: (newContent) => {
-        yUpsertLLMHistory({
-          yDoc,
-          nodeType: nodeName,
-          llmHistoryId,
-          newContent,
+    const response = !isLastStep
+      ? await agent<z.infer<typeof responseSchema>>({
           prompt,
-          input,
-          stepIndex,
-        });
-      },
-    });
+          responseSchema,
+          messages: [
+            {
+              role: "user",
+              content: input,
+            },
+          ],
+          handleGenerate: (newContent) => {
+            yUpsertLLMHistory({
+              yDoc,
+              nodeType: nodeName,
+              llmHistoryId,
+              newContent,
+              prompt,
+              input,
+              stepIndex,
+            });
+          },
+        })
+      : {
+          code: fullCode,
+          explanation: "最終結果",
+        };
 
     const newCode = response.code;
     const differences = diffLines(currentCode, newCode);

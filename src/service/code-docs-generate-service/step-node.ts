@@ -47,6 +47,7 @@ async function createStepNode({
     currentCode,
     stepInstruction: stepGuideNodeResult.response.instruction,
     nextStepDirection: stepGuideNodeResult.response.nextStepDirection,
+    isLastStep: stepGuideNodeResult.response.isLastStep || false,
     stepIndex,
   });
 

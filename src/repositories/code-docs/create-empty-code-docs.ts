@@ -1,7 +1,12 @@
+import { Account } from "@/models/account";
 import { CodeDocs } from "@/models/code-docs";
 import { getDefaultMongoClientCollection } from "@/utils/mongo-db";
 
-async function createEmptyCodeDocs(docsId: string, originalCode: string) {
+async function createEmptyCodeDocs(
+  docsId: string,
+  originalCode: string,
+  creatorAccount: Account
+) {
   const { codeDocsCollection } = await getDefaultMongoClientCollection();
   const codeDocs = await codeDocsCollection.findOne({ docsId });
   if (codeDocs) {
@@ -10,6 +15,7 @@ async function createEmptyCodeDocs(docsId: string, originalCode: string) {
   const newCodeDocs: CodeDocs = {
     id: docsId,
     originalCode,
+    creatorEmail: creatorAccount.email,
     language: "plaintext",
     title: "",
     description: "",
@@ -18,6 +24,7 @@ async function createEmptyCodeDocs(docsId: string, originalCode: string) {
     cards: [],
     llmHistoryList: [],
     isGenerating: true,
+    createdAt: new Date(),
   };
   await codeDocsCollection.insertOne(newCodeDocs);
 }

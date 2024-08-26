@@ -1,5 +1,7 @@
 export interface CodeDocs {
   id: string;
+  // 創建者
+  creatorEmail: string;
   // 原始碼
   originalCode: string;
   // 原始碼語言
@@ -15,6 +17,8 @@ export interface CodeDocs {
   llmHistoryList: LLMHistory[];
   // 該文章是否正在生成
   isGenerating: boolean;
+  // 創建時間
+  createdAt: Date;
 }
 
 /**

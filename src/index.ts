@@ -1,5 +1,9 @@
-import "@/route/code-docs-generate-route";
-import "@/route/code-docs-get-route";
+import "@/routes/account-user-info-route";
+import "@/routes/code-docs-delete-route";
+import "@/routes/code-docs-generate-route";
+import "@/routes/code-docs-get-route";
+import "@/routes/code-docs-list-get-by-user-email-route";
+import "@/routes/google-login-callback-route";
 import { server } from "@/server";
 
 const PORT = Number(process.env.PORT || 8080);

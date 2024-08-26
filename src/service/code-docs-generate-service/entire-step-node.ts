@@ -20,7 +20,7 @@ async function createEntireStepNode({
   fullCode,
   startCode,
 }: EntireStepNodeOptions) {
-  const maxStepIndex = 8;
+  const maxStepIndex = Number(process.env.MAX_CODE_STEP) || 20;
   let stepIndex = 1;
   let lastStepInstruction = "";
   let currentCode = startCode;

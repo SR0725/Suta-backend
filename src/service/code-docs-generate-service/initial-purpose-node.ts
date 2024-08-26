@@ -20,7 +20,7 @@ const prompt = `你需要分析一段程式碼，並生成該程式碼的主要�
 {
   "title": "<你生成的標題>",
   "description": "<你生成的描述>",
-  "language": "<程式碼的語言>"
+  "language": "<程式碼的語言，請盡量使用 hljs 能辨識的寫法，如 jsx、glsl、tsx>"
 }
 """
 
@@ -66,6 +66,13 @@ async function createInitialPurposeNode({
         });
       },
     });
+    // 更新 YJS 資料庫
+    const title = yDoc.getText("title");
+    const description = yDoc.getText("description");
+    const language = yDoc.getText("language");
+    title.insert(0, response.title);
+    description.insert(0, response.description);
+    language.insert(0, response.language);
     // 完全生成完畢後，更新 CodeDocs 資料庫
     const codeDocs = await getCodeDocsById(docsId);
     if (!codeDocs) {
