@@ -1,7 +1,5 @@
-import jwt from "jsonwebtoken";
 import { Account } from "@/models/account";
 import getAccountByEmail from "@/repositories/account/get-account-by-email";
-import upsertAccount from "@/repositories/account/upsert-account";
 import decodeUserJWT from "@/utils/decode-user-jwt";
 
 async function accountQueryService(token: string) {
