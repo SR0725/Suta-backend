@@ -1,3 +1,4 @@
+import "module-alias/register";
 import "@/routes/account-user-info-route";
 import "@/routes/code-docs-delete-route";
 import "@/routes/code-docs-generate-route";

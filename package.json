@@ -4,11 +4,14 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node -r dotenv/config index.js",
+    "start": "node -r module-alias/register -r dotenv/config dist/index.js",
     "dev": "ts-node-dev -r tsconfig-paths/register -r dotenv/config --respawn --transpile-only src/index.ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint src/**/*.ts",
     "test": "jest"
+  },
+  "_moduleAliases": {
+    "@": "dist"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +28,7 @@
     "fastify": "^4.28.1",
     "fastify-type-provider-zod": "^2.0.0",
     "jsonwebtoken": "^9.0.2",
+    "module-alias": "^2.2.3",
     "mongodb": "^6.8.0",
     "openai": "^4.56.0",
     "socket.io": "^4.7.5",
