@@ -17,8 +17,10 @@ ysocketio.initialize();
 server.setValidatorCompiler(validatorCompiler);
 server.setSerializerCompiler(serializerCompiler);
 
+const frontendUrl = process.env.FRONTEND_URL;
+
 server.register(cors, {
-  origin: "http://localhost:3000",
+  origin: frontendUrl,
   methods: ["GET", "POST", "DELETE", "PUT"],
   credentials: true,
 });
