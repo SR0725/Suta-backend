@@ -62,7 +62,6 @@ async function codeDocsGenerateService(account, code) {
     })
         .finally(() => {
         setTimeout(() => {
-            console.log("destroy");
             crdtDoc.destroy();
         }, 5000);
     });

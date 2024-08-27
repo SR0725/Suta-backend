@@ -11,9 +11,6 @@
     "lint": "eslint src/**/*.ts",
     "test": "jest"
   },
-  "_moduleAliases": {
-    "@": "dist"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",

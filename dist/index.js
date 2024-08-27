@@ -9,7 +9,7 @@ require("@/routes/code-docs-list-get-by-user-email-route");
 require("@/routes/google-login-callback-route");
 const server_1 = require("@/server");
 const PORT = Number(process.env.PORT || 8080);
-server_1.server.listen({ port: PORT }, (err, address) => {
+server_1.server.listen({ port: PORT, host: "0.0.0.0" }, (err, address) => {
     if (err) {
         console.error(err);
         process.exit(1);

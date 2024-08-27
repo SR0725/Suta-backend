@@ -12,11 +12,12 @@ import yUpsertLLMHistory from "./y-upsert-llm-history";
 
 const nodeName = "stepCodeModifyGeneration";
 const stepCodeModifyGenerationNodePrompt = `
-你現在要根據以上引導，修改程式碼
-逐漸將 #NOT_LEARNED 移除
+你是一个程式導師，旨在一步步地指導使用者學習程式。
+你現在要根據剛剛討論出來的結果
+撰寫用戶學習完畢本步驟後，其程式碼應該呈現的樣子
 請遵守以下規則：
-1. 撰寫新的程式時，只需要撰寫使用者學習完後，會呈現的樣子即可
-2. 確保生成的代碼在語法上正確，並符合剛剛提到的需求。
+1. 確保生成的程式碼僅包含本步驟的修改
+2. 確保生成的程式碼在語法上正確
 
 另外請撰寫這個步驟的指導與教學
 1. 請需要針對有修改的程式碼做教學與解釋
@@ -82,7 +83,7 @@ async function createStepCodeModifyGenerationNode({
         },
         {
           role: "assistant",
-          content: `本步驟指引：${stepInstruction}，下一個步驟方向(僅供程式設計參考，請勿用於本步驟的撰寫上)：${nextStepDirection}`,
+          content: `本步驟指引：${stepInstruction}`,
         },
         {
           role: "user",

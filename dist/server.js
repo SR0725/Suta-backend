@@ -16,8 +16,9 @@ exports.ysocketio = new server_1.YSocketIO(exports.io);
 exports.ysocketio.initialize();
 exports.server.setValidatorCompiler(fastify_type_provider_zod_1.validatorCompiler);
 exports.server.setSerializerCompiler(fastify_type_provider_zod_1.serializerCompiler);
+const frontendUrl = process.env.FRONTEND_URL;
 exports.server.register(cors_1.default, {
-    origin: "http://localhost:3000",
+    origin: frontendUrl,
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
 });
