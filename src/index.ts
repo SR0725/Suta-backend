@@ -9,7 +9,7 @@ import { server } from "@/server";
 
 const PORT = Number(process.env.PORT || 8080);
 
-server.listen({ port: PORT }, (err, address) => {
+server.listen({ port: PORT, host: "0.0.0.0" }, (err, address) => {
   if (err) {
     console.error(err);
     process.exit(1);
