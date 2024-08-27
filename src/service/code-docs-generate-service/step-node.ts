@@ -67,7 +67,7 @@ async function createStepNode({
     type: "codeStep",
     stepIndex: stepIndex,
     description: updatedCodeNodeResult.explanation,
-    conclusion: "",
+    conclusion: updatedCodeNodeResult.conclusion || "",
     codeLines: updatedCodeNodeResult.newCodeLines,
     preview: null,
   };

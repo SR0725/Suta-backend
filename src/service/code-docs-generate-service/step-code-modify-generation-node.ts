@@ -4,62 +4,44 @@ import * as Y from "yjs";
 import { z } from "zod";
 import { CodeLine } from "@/models/code-docs";
 import agent from "./agent";
+import {
+  requestPromptTemplate,
+  stepGuideGenerationNodePrompt,
+} from "./step-guide-generation-node";
 import yUpsertLLMHistory from "./y-upsert-llm-history";
 
 const nodeName = "stepCodeModifyGeneration";
-const prompt = `你是一個程式碼工程師
-你將被授予完整的目標程式碼，以及目前你已經寫的程式碼。
-你同時也會拿到一個程式碼修改指南
-你需要根據修改指南，修改當前進度的程式碼，最終使其趨近於完整程式碼
+const stepCodeModifyGenerationNodePrompt = `
+你現在要根據以上引導，修改程式碼
+逐漸將 #NOT_LEARNED 移除
 請遵守以下規則：
-1. 請只做出修改指南提到的修改
-2. 程式碼的使用上，請盡量遵循目標程式碼
-3. 確保生成的代碼在語法上正確，並符合修改指南需求。
-4. 最後以以下 JSON 格式輸出
+1. 撰寫新的程式時，只需要撰寫使用者學習完後，會呈現的樣子即可
+2. 確保生成的代碼在語法上正確，並符合剛剛提到的需求。
 
 另外請撰寫這個步驟的指導與教學
 1. 請需要針對有修改的程式碼做教學與解釋
 2. 教學應當簡單易懂，善用譬喻，想像你在對國中生解釋一般
 3. 盡量簡潔、直接，限制在 100 字內
+
+以及視情況生成一個步驟結語
+1. 只有在下一步驟與本步驟的程式碼差異較大時，才需要撰寫結語
+2. 結語應當簡單易懂，善用譬喻，想像你在對國中生解釋一般
+3. 盡量簡潔、直接，限制在 100 字內
+4. 通常情況，不需要生成結語
+
+最後以以下 JSON 格式輸出
 """
 {
   "code": "<程式碼>",
-  "explanation": "<本步驟的指導與教學，可以使用 markdown 格式>"
+  "explanation": "<本步驟的指導與教學，可以使用 markdown 格式>",
+  "conclusion": "<本步驟的結語，可以使用 markdown 格式>"
 }
 """`;
-
-const requestPromptTemplate = (
-  fullCode: string,
-  currentCode: string,
-  stepInstruction: string,
-  nextStepDirection: string
-) => {
-  return `以下是完整的目標程式碼：
-<complete_code> 
-${fullCode}
-</complete_code>
-
-以下是當前進度：
-<current_progress> 
-${currentCode}
-</current_progress>
-
-以下是本步驟的修改指南：
-<step_guide> 
-${stepInstruction}
-</step_guide>
-
-以下是下一步驟的參考，請注意，這個指南僅供下一步使用
-僅供架構設計參考用，請不要將這個指南用於本步驟的修改
-<next_step_direction> 
-${nextStepDirection}
-</next_step_direction>
-  `;
-};
 
 const responseSchema = z.object({
   code: z.string(),
   explanation: z.string(),
+  conclusion: z.string().optional(),
 });
 
 interface StepCodeModifyGenerationOptions {
@@ -90,32 +72,35 @@ async function createStepCodeModifyGenerationNode({
       nextStepDirection
     );
     // 生成標題和描述
-    const response = !isLastStep
-      ? await agent<z.infer<typeof responseSchema>>({
-          prompt,
-          responseSchema,
-          messages: [
-            {
-              role: "user",
-              content: input,
-            },
-          ],
-          handleGenerate: (newContent) => {
-            yUpsertLLMHistory({
-              yDoc,
-              nodeType: nodeName,
-              llmHistoryId,
-              newContent,
-              prompt,
-              input,
-              stepIndex,
-            });
-          },
-        })
-      : {
-          code: fullCode,
-          explanation: "最終結果",
-        };
+    const response = await agent<z.infer<typeof responseSchema>>({
+      prompt: stepGuideGenerationNodePrompt,
+      responseSchema,
+      messages: [
+        {
+          role: "user",
+          content: input,
+        },
+        {
+          role: "assistant",
+          content: `本步驟指引：${stepInstruction}，下一個步驟方向(僅供程式設計參考，請勿用於本步驟的撰寫上)：${nextStepDirection}`,
+        },
+        {
+          role: "user",
+          content: stepCodeModifyGenerationNodePrompt,
+        },
+      ],
+      handleGenerate: (newContent) => {
+        yUpsertLLMHistory({
+          yDoc,
+          nodeType: nodeName,
+          llmHistoryId,
+          newContent,
+          prompt: stepCodeModifyGenerationNodePrompt,
+          input,
+          stepIndex,
+        });
+      },
+    });
 
     const newCode = response.code;
     const differences = diffLines(currentCode, newCode);
@@ -133,13 +118,14 @@ async function createStepCodeModifyGenerationNode({
 
     return {
       newCodeLines,
-      newCode: newCode,
+      newCode: isLastStep ? fullCode : newCode,
       explanation: response.explanation,
+      conclusion: response.conclusion,
       llmHistory: {
         id: llmHistoryId,
         nodeType: nodeName,
         response: JSON.stringify(response),
-        prompt,
+        prompt: stepCodeModifyGenerationNodePrompt,
         input,
         stepIndex,
       },

@@ -54,15 +54,19 @@ async function codeDocsGenerateService(account: Account, code: string) {
   const docsId = randomUUID();
   const crdtDoc = createCRDTDoc(docsId);
   await createEmptyCodeDocs(docsId, code, account);
-  try {
-    startNodes(docsId, code, crdtDoc);
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setTimeout(() => {
-      crdtDoc.destroy();
-    }, 5000);
-  }
+  startNodes(docsId, code, crdtDoc)
+    .then(() => {
+      console.log("startNodes done");
+    })
+    .catch((error) => {
+      console.error(error);
+    })
+    .finally(() => {
+      setTimeout(() => {
+        console.log("destroy");
+        crdtDoc.destroy();
+      }, 5000);
+    });
 
   await upsertAccount({
     ...account,

@@ -1,20 +1,25 @@
 import { randomUUID } from "crypto";
+import { diffLines } from "diff";
 import * as Y from "yjs";
 import { z } from "zod";
 import agent from "./agent";
 import yUpsertLLMHistory from "./y-upsert-llm-history";
 
 const nodeName = "stepGuideGeneration";
-const prompt = `
-你是一个 AI 程式設計導師，旨在一步步地指導使用者學習程式。
-你將被授予完整的目標程式碼，以及使用者目前的進度。
-你的目的是指導用戶完成目標程式碼，你需要給予一個明確的指導方針來告知用戶該怎麼修改
-也就是下一步該怎麼走，以便更接近完整代碼，此步驟應該是：
+export const stepGuideGenerationNodePrompt = `
+你是一个程式導師，旨在一步步地指導使用者學習程式。
+你會獲得到一個目標程式碼，你的目的是指導用戶學會這個程式碼
+當中每一行的開頭，會用一個 #NOT_LEARNED 符號來表示說使用者還沒學到這行程式碼
+你需要引導用戶，一步一步逐漸移除 #NOT_LEARNED
+為此，請你設計本步驟該學習目標程式碼的那些功能
+學習目標應該符合以下規則
 1. 清晰且具體
 2. 能夠在一次迭代中完成
-3. 每一步只專注於一個概念或功能
-4. 修改的程式碼行數不超過 20 行
-5. 如果剩餘的部分已經相差不大，請直接結束
+3. 每一步只專注於一個概念
+4. 需移除 #NOT_LEARNED 的程式碼行數不超過 10 行
+5. 你的目的是引導逐漸移除 #NOT_LEARNED，而不是直接完成
+6. 不要教學程式碼以外的功能
+7. 如果剩餘的部分已經相差不大，請直接結束
 
 基於上述任務，請反饋以下：
 1. 請提供此步驟的具體解決項目
@@ -24,6 +29,7 @@ const prompt = `
 另外為了方便程式架構的設計，請順便指出下一步驟的大概修改方向
 指出在本步驟完成後，下一步驟應該怎麼修改
 
+最後請判定這次學習是否為最後一步，為了不拖延文長，如果距離目標不遠，請嘗試直接完成全部
 
 最後以以下 JSON 格式輸出
 """
@@ -38,21 +44,29 @@ const prompt = `
 請不要給予任何超出目標的指示，如果已經完成目標，請直接結束
 `;
 
-const requestPromptTemplate = (
+export const requestPromptTemplate = (
   fullCode: string,
   currentCode: string,
   lastStepInstruction: string,
   nextStepDirection: string
 ) => {
-  return `以下是使用者正在努力實現的完整代碼：
-<complete_code> 
-${fullCode}
-</complete_code>
+  const differences = diffLines(fullCode, currentCode);
 
-以下是使用者代碼的當前進度：
-<current_progress> 
-${currentCode}
-</current_progress>
+  const code = differences
+    .filter((diff) => !diff.added)
+    .flatMap((diff) =>
+      diff.value.split("\n").map((line) => ({
+        ...diff,
+        value: line,
+      }))
+    )
+    .map((diff) => (diff.removed ? `#NOT_LEARNED ${diff.value}` : diff.value))
+    .join("\n");
+
+  return `以下是使用者正在努力實現的完整代碼：
+<code> 
+${code}
+</code>
 
 ${
   lastStepInstruction &&
@@ -105,7 +119,7 @@ async function createStepGuideGenerationNode({
     );
     // 生成標題和描述
     const response = await agent<z.infer<typeof responseSchema>>({
-      prompt,
+      prompt: stepGuideGenerationNodePrompt,
       responseSchema,
       messages: [
         {
@@ -119,7 +133,7 @@ async function createStepGuideGenerationNode({
           nodeType: nodeName,
           llmHistoryId,
           newContent,
-          prompt,
+          prompt: stepGuideGenerationNodePrompt,
           input,
           stepIndex,
         });
@@ -133,7 +147,7 @@ async function createStepGuideGenerationNode({
         id: llmHistoryId,
         nodeType: nodeName,
         response: JSON.stringify(response),
-        prompt,
+        prompt: stepGuideGenerationNodePrompt,
         input,
         stepIndex,
       },
