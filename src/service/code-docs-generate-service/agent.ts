@@ -30,7 +30,7 @@ async function agent<T = string>(props: AgentProps<T>): Promise<T> {
     model: model,
     messages: [{ role: "system", content: prompt }, ...messages],
     max_tokens: maxTokens,
-    temperature: 0.2,
+    temperature: 0,
     stream: true,
     ...(responseSchema
       ? {

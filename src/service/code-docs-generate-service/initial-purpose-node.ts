@@ -94,6 +94,8 @@ async function createInitialPurposeNode({
         },
       ],
     });
+
+    return response;
   } catch (error) {
     console.error(error);
   }

@@ -2,16 +2,21 @@ import { randomUUID } from "crypto";
 import * as Y from "yjs";
 import { CodeStepCard } from "@/models/code-docs";
 import createStepCodeModifyGenerationNode from "./step-code-modify-generation-node";
-import createStepGuideGenerationNode from "./step-guide-generation-node";
+import createStepModuleNeedEvaluatorNode from "./step-module-need-evaluator-node";
 
 // 定義單一步驟節點的選項介面
 interface StepNodeOptions {
   yDoc: Y.Doc;
   fullCode: string;
   currentCode: string;
-  lastStepInstruction: string;
-  nextStepDirection: string;
+  codeParagraphs: {
+    title: string;
+    startLine: number;
+  }[];
+  stepInstruction: string;
+  nextStepInstruction: string;
   stepIndex: number;
+  isLastStep: boolean;
 }
 
 // 創建單一步驟節點的函式
@@ -19,25 +24,27 @@ async function createStepNode({
   yDoc,
   fullCode,
   currentCode,
-  lastStepInstruction,
-  nextStepDirection,
+  codeParagraphs,
+  stepInstruction,
+  nextStepInstruction,
   stepIndex,
+  isLastStep,
 }: StepNodeOptions) {
   // 生成唯一的步驟 ID
   const stepId = randomUUID();
 
-  // 創建步驟指南節點
-  const stepGuideNodeResult = await createStepGuideGenerationNode({
-    yDoc,
-    fullCode,
-    currentCode,
-    lastStepInstruction,
-    nextStepDirection,
-    stepIndex,
-  });
+  // 評估步驟需求模塊
+  const stepModuleNeedEvaluatorNodeResult =
+    await createStepModuleNeedEvaluatorNode({
+      yDoc,
+      codeParagraphs,
+      fullCode,
+      stepInstruction,
+      stepIndex,
+    });
 
-  if (!stepGuideNodeResult) {
-    throw new Error("找不到步驟指南");
+  if (!stepModuleNeedEvaluatorNodeResult) {
+    throw new Error("找不到步驟需求模塊");
   }
 
   // 創建程式碼修改節點
@@ -45,9 +52,12 @@ async function createStepNode({
     yDoc,
     fullCode,
     currentCode,
-    stepInstruction: stepGuideNodeResult.response.instruction,
-    nextStepDirection: stepGuideNodeResult.response.nextStepDirection,
-    isLastStep: stepGuideNodeResult.response.isLastStep || false,
+    codeParagraphs,
+    usedCodeParagraphNumbers:
+      stepModuleNeedEvaluatorNodeResult.response.usedCodeParagraphNumbers,
+    stepInstruction,
+    nextStepInstruction,
+    isLastStep,
     stepIndex,
   });
 
@@ -57,7 +67,7 @@ async function createStepNode({
 
   // 整合 LLM 歷史記錄
   const llmHistoryList = [
-    stepGuideNodeResult.llmHistory,
+    stepModuleNeedEvaluatorNodeResult.llmHistory,
     updatedCodeNodeResult.llmHistory,
   ];
 
@@ -76,9 +86,6 @@ async function createStepNode({
   return {
     stepCard,
     updatedCode: updatedCodeNodeResult.newCode,
-    stepInstruction: stepGuideNodeResult.response.instruction,
-    nextStepDirection: stepGuideNodeResult.response.nextStepDirection,
-    isLastStep: stepGuideNodeResult.response.isLastStep,
     llmHistoryList,
   };
 }

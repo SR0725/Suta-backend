@@ -10,7 +10,12 @@ interface EntireStepNodeOptions {
   docsId: string;
   yDoc: Y.Doc;
   fullCode: string;
-  startCode: string;
+  initialCode: string;
+  codeParagraphs: {
+    title: string;
+    startLine: number;
+  }[];
+  instructions: string[];
 }
 
 // 創建總體步驟節點的函式
@@ -18,32 +23,31 @@ async function createEntireStepNode({
   docsId,
   yDoc,
   fullCode,
-  startCode,
+  initialCode,
+  codeParagraphs,
+  instructions,
 }: EntireStepNodeOptions) {
-  const maxStepIndex = Number(process.env.MAX_CODE_STEP) || 20;
-  let stepIndex = 1;
-  let lastStepInstruction = "";
-  let currentCode = startCode;
-  let nextStepDirection = "";
+  let currentCode = initialCode;
   const codeStepCardList: CodeStepCard[] = [];
   const newLLMHistoryList: LLMHistory[] = [];
 
-  // 循環創建步驟，直到達到最大步驟數或遇到最後一步
-  while (stepIndex < maxStepIndex) {
+  for (let stepIndex = 1; stepIndex < instructions.length; stepIndex++) {
+    const instruction = instructions[stepIndex];
     const step = await createStepNode({
       yDoc,
       fullCode,
       currentCode,
-      lastStepInstruction,
-      nextStepDirection,
+      codeParagraphs,
+      stepInstruction: instruction,
+      nextStepInstruction:
+        stepIndex === instructions.length - 1
+          ? ""
+          : instructions[stepIndex + 1],
       stepIndex,
+      isLastStep: stepIndex === instructions.length - 1,
     });
 
-    // 更新相關變數
-    lastStepInstruction = step.stepInstruction;
-    nextStepDirection = step.nextStepDirection;
     currentCode = step.updatedCode;
-    stepIndex++;
 
     // 將步驟卡片推送到 Yjs 文件
     YPushCard({
@@ -54,11 +58,6 @@ async function createEntireStepNode({
     // 添加步驟卡片和 LLM 歷史記錄到列表中
     codeStepCardList.push(step.stepCard);
     newLLMHistoryList.push(...step.llmHistoryList);
-
-    // 如果是最後一步，跳出迴圈
-    if (step.isLastStep) {
-      break;
-    }
   }
 
   // 全部步驟生成完畢後，更新 CodeDocs 資料庫

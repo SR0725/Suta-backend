@@ -5,7 +5,10 @@ import upsertAccount from "@/repositories/account/upsert-account";
 import getCodeDocsById from "@/repositories/code-docs/get-code-docs-by-id";
 import updateCodeDocs from "@/repositories/code-docs/update-code-docs";
 import createCRDTDoc, { CRDTDoc } from "@/utils/crdt-doc";
+import createBigStepDirectionDefineNode from "./big-step-direction-define";
+import createCodeSplitToModuleNode from "./code-split-to-module-node";
 import createEntireStepNode from "./entire-step-node";
+import getCodeModuleText from "./get-code-module-text";
 import createInitialCodeArchitectureNode from "./initial-code-architecture-node";
 import createInitialPurposeNode from "./initial-purpose-node";
 
@@ -20,22 +23,47 @@ async function startNodes(docsId: string, code: string, crdtDoc: CRDTDoc) {
     yDoc: crdtDoc.doc,
   });
 
-  // 生成初始程式碼
-  const initialCode = await createInitialCodeArchitectureNode({
+  // 分割程式碼
+  const codeSplitToModuleResult = await createCodeSplitToModuleNode({
     docsId,
     code,
     yDoc: crdtDoc.doc,
   });
 
-  if (!initialCode) {
-    throw new Error("Initial code not found");
+  if (!codeSplitToModuleResult) {
+    throw new Error("Code split to module not found");
+  }
+  const codeParagraphs = codeSplitToModuleResult.codeParagraphs;
+
+  // 生成大步驟方向
+  const bigStepDirection = await createBigStepDirectionDefineNode({
+    docsId,
+    yDoc: crdtDoc.doc,
+    codeModuleText: getCodeModuleText(code, codeParagraphs),
+  });
+
+  if (!bigStepDirection) {
+    throw new Error("Big step direction not found");
+  }
+
+  // 生成初始程式碼架構
+  const initialCodeArchitecture = await createInitialCodeArchitectureNode({
+    docsId,
+    code,
+    yDoc: crdtDoc.doc,
+  });
+
+  if (!initialCodeArchitecture) {
+    throw new Error("Initial code architecture not found");
   }
 
   // 創建全部步驟
   await createEntireStepNode({
     docsId,
     fullCode: code,
-    startCode: initialCode,
+    initialCode: initialCodeArchitecture,
+    codeParagraphs: codeParagraphs,
+    instructions: bigStepDirection.instructions,
     yDoc: crdtDoc.doc,
   });
 
