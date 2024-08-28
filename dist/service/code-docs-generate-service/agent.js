@@ -14,7 +14,7 @@ async function agent(props) {
     var _d, _e;
     const { prompt, messages, responseSchema, handleGenerate, model = "gpt-4o-mini", maxTokens = 4096, retryTimes = 3, _alreadyRetryTimes = 0, } = props;
     const client = (0, openai_1.createOpenAI)();
-    const stream = await client.chat.completions.create(Object.assign({ model: model, messages: [{ role: "system", content: prompt }, ...messages], max_tokens: maxTokens, temperature: 0.2, stream: true }, (responseSchema
+    const stream = await client.chat.completions.create(Object.assign({ model: model, messages: [{ role: "system", content: prompt }, ...messages], max_tokens: maxTokens, temperature: 0, stream: true }, (responseSchema
         ? {
             response_format: (0, zod_1.zodResponseFormat)(responseSchema, "response-format"),
         }

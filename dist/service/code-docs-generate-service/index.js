@@ -9,10 +9,13 @@ const upsert_account_1 = __importDefault(require("@/repositories/account/upsert-
 const get_code_docs_by_id_1 = __importDefault(require("@/repositories/code-docs/get-code-docs-by-id"));
 const update_code_docs_1 = __importDefault(require("@/repositories/code-docs/update-code-docs"));
 const crdt_doc_1 = __importDefault(require("@/utils/crdt-doc"));
+const big_step_direction_define_1 = __importDefault(require("./big-step-direction-define"));
+const code_split_to_module_node_1 = __importDefault(require("./code-split-to-module-node"));
 const entire_step_node_1 = __importDefault(require("./entire-step-node"));
+const get_code_module_text_1 = __importDefault(require("./get-code-module-text"));
 const initial_code_architecture_node_1 = __importDefault(require("./initial-code-architecture-node"));
 const initial_purpose_node_1 = __importDefault(require("./initial-purpose-node"));
-async function startNodes(docsId, code, crdtDoc) {
+async function startNodes(docsId, code, crdtDoc, locale) {
     // 設定 doc isGenerating
     const yIsGenerating = crdtDoc.doc.getText("isGenerating");
     yIsGenerating.insert(0, "true");
@@ -21,22 +24,46 @@ async function startNodes(docsId, code, crdtDoc) {
         docsId,
         code,
         yDoc: crdtDoc.doc,
+        locale,
     });
-    // 生成初始程式碼
-    const initialCode = await (0, initial_code_architecture_node_1.default)({
+    // 分割程式碼
+    const codeSplitToModuleResult = await (0, code_split_to_module_node_1.default)({
         docsId,
         code,
         yDoc: crdtDoc.doc,
     });
-    if (!initialCode) {
-        throw new Error("Initial code not found");
+    if (!codeSplitToModuleResult) {
+        throw new Error("Code split to module not found");
+    }
+    const codeParagraphs = codeSplitToModuleResult.codeParagraphs;
+    // 生成大步驟方向
+    const bigStepDirection = await (0, big_step_direction_define_1.default)({
+        docsId,
+        yDoc: crdtDoc.doc,
+        codeModuleText: (0, get_code_module_text_1.default)(code, codeParagraphs),
+    });
+    if (!bigStepDirection) {
+        throw new Error("Big step direction not found");
+    }
+    // 生成初始程式碼架構
+    const initialCodeArchitecture = await (0, initial_code_architecture_node_1.default)({
+        docsId,
+        code,
+        yDoc: crdtDoc.doc,
+        locale,
+    });
+    if (!initialCodeArchitecture) {
+        throw new Error("Initial code architecture not found");
     }
     // 創建全部步驟
     await (0, entire_step_node_1.default)({
         docsId,
         fullCode: code,
-        startCode: initialCode,
+        initialCode: initialCodeArchitecture,
+        codeParagraphs: codeParagraphs,
+        instructions: bigStepDirection.instructions,
         yDoc: crdtDoc.doc,
+        locale,
     });
     // 完成工作
     const codeDocs = await (0, get_code_docs_by_id_1.default)(docsId);
@@ -48,12 +75,12 @@ async function startNodes(docsId, code, crdtDoc) {
     yIsGenerating.delete(0, yIsGenerating.length);
     yIsGenerating.insert(0, "false");
 }
-async function codeDocsGenerateService(account, code) {
+async function codeDocsGenerateService(account, code, locale) {
     var _a, _b;
     const docsId = (0, crypto_1.randomUUID)();
     const crdtDoc = (0, crdt_doc_1.default)(docsId);
     await (0, create_empty_code_docs_1.default)(docsId, code, account);
-    startNodes(docsId, code, crdtDoc)
+    startNodes(docsId, code, crdtDoc, locale)
         .then(() => {
         console.log("startNodes done");
     })

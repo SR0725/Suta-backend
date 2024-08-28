@@ -11,32 +11,33 @@ const agent_1 = __importDefault(require("./agent"));
 const y_push_card_1 = __importDefault(require("./y-push-card"));
 const y_upsert_llm_history_1 = __importDefault(require("./y-upsert-llm-history"));
 const nodeName = "initialCodeArchitecture";
-const prompt = `你是一個旨在幫助教授編程的AI助手。你的任務是為給定的代碼創建一個乾淨、最小的起始點。這個起始點將作為逐步編程教程的基礎。
-你的目標是為這段代碼生成一個初始框架。這個框架應該是：
-1. 可執行的（應能在沒有錯誤的情況下運行）
-2. 儘可能乾淨和最小
-3. 沒有任何特定功能
-4. 無需特殊的導入或函數聲明
-5. 只包含作為起始點所必需的基本內容
+const prompt = `You are an AI assistant designed to help teach programming. Your task is to create a clean, minimal starting point for the given code. This starting point will serve as the foundation for a step-by-step programming tutorial.
 
-按照以下步驟創建初始框架：
-1. 確定代碼的基本結構（例如，是否是函數、類還是腳本）。
-2. 移除所有特定功能，只保留最基本的結構。
-3. 移除所有導入，除了絕對必要的（如果有的話）。
-4. 移除所有函數和變量聲明，僅保留主要入口點（如果適用）。
-5. 如果有主函數或入口點，保留其聲明但刪除內容。
-6. 確保生成的代碼在語法上仍然正確，並且可以在沒有錯誤的情況下執行。
-7. 最後以以下 JSON 格式輸出
+Your goal is to generate an initial framework for this code. This framework should be:
+1. Executable (should run without errors)
+2. As clean and minimal as possible
+3. Without any specific functionality
+4. Without special imports or function declarations
+5. Containing only the essential elements necessary for a starting point
+
+Follow these steps to create the initial framework:
+1. Identify the basic structure of the code (e.g., whether it's a function, class, or script).
+2. Remove all specific functionality, keeping only the most basic structure.
+3. Remove all imports except those that are absolutely necessary (if any).
+4. Remove all function and variable declarations, keeping only the main entry point (if applicable).
+5. If there's a main function or entry point, keep its declaration but delete its contents.
+6. Ensure the generated code is still syntactically correct and can be executed without errors.
+7. Finally, output in the following JSON format:
 """
 {
-  "code": "<程式碼>"
+  "code": "<code>"
 }
 """
-記住，目標是提供一個最簡單的起始點，以便初學者可以在此基礎上構建，最終創建完整代碼。`;
+Remember, the goal is to provide the simplest starting point possible for beginners to build upon and eventually create the complete code.`;
 const responseSchema = zod_1.z.object({
     code: zod_1.z.string(),
 });
-async function createInitialCodeArchitectureNode({ docsId, code, yDoc, }) {
+async function createInitialCodeArchitectureNode({ docsId, code, yDoc, locale, }) {
     const llmHistoryId = (0, crypto_1.randomUUID)();
     const cardId = (0, crypto_1.randomUUID)();
     try {
@@ -68,7 +69,7 @@ async function createInitialCodeArchitectureNode({ docsId, code, yDoc, }) {
             type: "codeStep",
             id: cardId,
             stepIndex: 0,
-            description: "初始程式碼架構",
+            description: locale === "zh-TW" ? "初始程式碼架構" : "Initial code architecture",
             conclusion: "",
             codeLines: response.code.split("\n").map((line) => ({
                 text: line,

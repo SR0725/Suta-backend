@@ -3,24 +3,68 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.requestPromptTemplate = void 0;
 const crypto_1 = require("crypto");
 const diff_1 = require("diff");
 const zod_1 = require("zod");
 const agent_1 = __importDefault(require("./agent"));
-const step_guide_generation_node_1 = require("./step-guide-generation-node");
+const get_code_module_text_1 = __importDefault(require("./get-code-module-text"));
 const y_upsert_llm_history_1 = __importDefault(require("./y-upsert-llm-history"));
 const nodeName = "stepCodeModifyGeneration";
-const stepCodeModifyGenerationNodePrompt = `
-你是一个程式導師，旨在一步步地指導使用者學習程式。
-你現在要根據剛剛討論出來的結果
-撰寫用戶學習完畢本步驟後，其程式碼應該呈現的樣子
+const prompt = {
+    en: `You are a professional software engineer, focused on structured programming education.
+Your task is: you will receive a complete code that has been divided into multiple paragraphs,
+as well as the code that the current user has already learned.
+You will also receive step-by-step instructions.
+You need to write the code that the user will understand after completing this step, based on the step instructions.
+
+Please follow these rules:
+1. The generated code fully complies with the step instructions
+2. The program does not exceed the scope of the step instructions
+3. It should focus on only one key point, and separate logic from presentation
+4. When both logic and presentation need to be understood, only write the logical part
+5. Never write logic and presentation simultaneously
+6. The code can only use the given paragraphs
+
+Additionally, please write guidance and instructions for this step
+1. Please provide teaching and explanations for the modified code
+2. The instructions should be simple and easy to understand, use analogies, imagine you're explaining to a high school student
+3. Try to be concise and direct, limit it to 100 words
+
+And generate a step conclusion if necessary
+1. Only write a conclusion if the next step differs significantly from this step's code
+2. The conclusion should be simple and easy to understand, use analogies, imagine you're explaining to a middle school student
+3. Try to be concise and direct, limit it to 100 words
+4. In most cases, a conclusion is not needed
+
+Finally, output in the following JSON format
+"""
+{
+  "code": "<code>",
+  "explanation": "<guidance and instructions for this step, can use markdown format>",
+  "conclusion": "<conclusion for this step, can use markdown format>"
+}
+"""
+Remember, your goal is to write the code that the user will understand after completing this step
+Please write in English
+`,
+    "zh-TW": `您是一位專業的軟體工程師，專注於結構化程式教學。
+你的任務是：你將取得一個完整的程式碼，該程式碼已經被切割成多個段落
+以及當前用戶已經習得的程式碼
+同時你也會拿到一個步驟指引
+你需要根據步驟指引，撰寫出用戶本步驟理解完畢後的程式碼
+
 請遵守以下規則：
-1. 確保生成的程式碼僅包含本步驟的修改
-2. 確保生成的程式碼在語法上正確
+1. 生成的程式碼完全遵守步驟指引
+2. 程式不超出步驟指引的範圍
+3. 應當只聚焦在一個重點上，並且將邏輯與畫面分離
+4. 當同時有邏輯、畫面的程式需要理解，只撰寫邏輯得部分
+5. 切勿同時撰寫邏輯與畫面
+6. 程式碼只能取用所給予的段落
 
 另外請撰寫這個步驟的指導與教學
 1. 請需要針對有修改的程式碼做教學與解釋
-2. 教學應當簡單易懂，善用譬喻，想像你在對國中生解釋一般
+2. 教學應當簡單易懂，善用譬喻，想像你在對高中生解釋一般
 3. 盡量簡潔、直接，限制在 100 字內
 
 以及視情況生成一個步驟結語
@@ -36,32 +80,58 @@ const stepCodeModifyGenerationNodePrompt = `
   "explanation": "<本步驟的指導與教學，可以使用 markdown 格式>",
   "conclusion": "<本步驟的結語，可以使用 markdown 格式>"
 }
-"""`;
+"""
+記住，你的目標是撰寫出用戶本步驟理解完畢後的程式碼
+請使用台灣繁體中文撰寫
+`,
+};
+const requestPromptTemplate = (fullCode, codeParagraphs, usedCodeParagraphNumbers, currentCode, stepInstruction, nextStepInstruction) => {
+    const usedCodeParagraphs = codeParagraphs.filter((paragraph, index) => usedCodeParagraphNumbers.includes(index));
+    const codeText = (0, get_code_module_text_1.default)(fullCode, usedCodeParagraphs);
+    return `Below is the instruction for this step, please follow it strictly
+Do not make any modifications beyond the scope of the instruction
+<step_instruction>
+${stepInstruction}
+</step_instruction>
+
+Below is the direction for the next step, for reference in program structure design only
+Do not apply this direction in the current step
+<next_step_instruction>
+${nextStepInstruction}
+</next_instruction>
+
+Below are partial modules of the target code, which already include the parts you need
+<code> 
+${codeText}
+</code>
+
+Below is the code that the user has already learned:
+<current_code>
+${currentCode}
+</current_code>
+
+You are writing the code that the user will understand after completing this step, based on the code they have already learned
+So remember to include the code that the user has already learned as well
+The target code may not be complete, but that's okay, you only need to focus on the code for this step
+`;
+};
+exports.requestPromptTemplate = requestPromptTemplate;
 const responseSchema = zod_1.z.object({
     code: zod_1.z.string(),
     explanation: zod_1.z.string(),
     conclusion: zod_1.z.string().optional(),
 });
-async function createStepCodeModifyGenerationNode({ yDoc, fullCode, currentCode, stepInstruction, nextStepDirection, isLastStep, stepIndex, }) {
+async function createStepCodeModifyGenerationNode({ yDoc, codeParagraphs, fullCode, usedCodeParagraphNumbers, currentCode, stepInstruction, nextStepInstruction, isLastStep, stepIndex, locale, }) {
     try {
         const llmHistoryId = (0, crypto_1.randomUUID)();
-        const input = (0, step_guide_generation_node_1.requestPromptTemplate)(fullCode, currentCode, stepInstruction, nextStepDirection);
-        // 生成標題和描述
+        const input = (0, exports.requestPromptTemplate)(fullCode, codeParagraphs, usedCodeParagraphNumbers, currentCode, stepInstruction, nextStepInstruction);
         const response = await (0, agent_1.default)({
-            prompt: step_guide_generation_node_1.stepGuideGenerationNodePrompt,
+            prompt: prompt[locale],
             responseSchema,
             messages: [
                 {
                     role: "user",
                     content: input,
-                },
-                {
-                    role: "assistant",
-                    content: `本步驟指引：${stepInstruction}`,
-                },
-                {
-                    role: "user",
-                    content: stepCodeModifyGenerationNodePrompt,
                 },
             ],
             handleGenerate: (newContent) => {
@@ -70,7 +140,7 @@ async function createStepCodeModifyGenerationNode({ yDoc, fullCode, currentCode,
                     nodeType: nodeName,
                     llmHistoryId,
                     newContent,
-                    prompt: stepCodeModifyGenerationNodePrompt,
+                    prompt: prompt[locale],
                     input,
                     stepIndex,
                 });
@@ -95,7 +165,7 @@ async function createStepCodeModifyGenerationNode({ yDoc, fullCode, currentCode,
                 id: llmHistoryId,
                 nodeType: nodeName,
                 response: JSON.stringify(response),
-                prompt: stepCodeModifyGenerationNodePrompt,
+                prompt: prompt[locale],
                 input,
                 stepIndex,
             },

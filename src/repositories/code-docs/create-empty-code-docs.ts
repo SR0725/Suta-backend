@@ -25,6 +25,7 @@ async function createEmptyCodeDocs(
     llmHistoryList: [],
     isGenerating: true,
     createdAt: new Date(),
+    tags: [],
   };
   await codeDocsCollection.insertOne(newCodeDocs);
 }
