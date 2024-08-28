@@ -4,6 +4,7 @@ import "@/routes/code-docs-delete-route";
 import "@/routes/code-docs-generate-route";
 import "@/routes/code-docs-get-route";
 import "@/routes/code-docs-list-get-by-user-email-route";
+import "@/routes/code-docs-update-route";
 import "@/routes/google-login-callback-route";
 import { server } from "@/server";
 

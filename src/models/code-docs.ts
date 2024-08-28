@@ -13,6 +13,7 @@ export interface CodeDocs {
   // 文章插圖
   illustration: string | null;
   cards: (SectionCard | CodeStepCard)[];
+  tags: string[];
   // LLM 對話紀錄
   llmHistoryList: LLMHistory[];
   // 該文章是否正在生成

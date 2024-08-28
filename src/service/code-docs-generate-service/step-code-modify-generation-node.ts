@@ -8,7 +8,44 @@ import getCodeModuleText from "./get-code-module-text";
 import yUpsertLLMHistory from "./y-upsert-llm-history";
 
 const nodeName = "stepCodeModifyGeneration";
-const stepCodeModifyGenerationNodePrompt = `您是一位專業的軟體工程師，專注於結構化程式教學。
+const prompt = {
+  en: `You are a professional software engineer, focused on structured programming education.
+Your task is: you will receive a complete code that has been divided into multiple paragraphs,
+as well as the code that the current user has already learned.
+You will also receive step-by-step instructions.
+You need to write the code that the user will understand after completing this step, based on the step instructions.
+
+Please follow these rules:
+1. The generated code fully complies with the step instructions
+2. The program does not exceed the scope of the step instructions
+3. It should focus on only one key point, and separate logic from presentation
+4. When both logic and presentation need to be understood, only write the logical part
+5. Never write logic and presentation simultaneously
+6. The code can only use the given paragraphs
+
+Additionally, please write guidance and instructions for this step
+1. Please provide teaching and explanations for the modified code
+2. The instructions should be simple and easy to understand, use analogies, imagine you're explaining to a high school student
+3. Try to be concise and direct, limit it to 100 words
+
+And generate a step conclusion if necessary
+1. Only write a conclusion if the next step differs significantly from this step's code
+2. The conclusion should be simple and easy to understand, use analogies, imagine you're explaining to a middle school student
+3. Try to be concise and direct, limit it to 100 words
+4. In most cases, a conclusion is not needed
+
+Finally, output in the following JSON format
+"""
+{
+  "code": "<code>",
+  "explanation": "<guidance and instructions for this step, can use markdown format>",
+  "conclusion": "<conclusion for this step, can use markdown format>"
+}
+"""
+Remember, your goal is to write the code that the user will understand after completing this step
+Please write in English
+`,
+  "zh-TW": `您是一位專業的軟體工程師，專注於結構化程式教學。
 你的任務是：你將取得一個完整的程式碼，該程式碼已經被切割成多個段落
 以及當前用戶已經習得的程式碼
 同時你也會拿到一個步驟指引
@@ -42,8 +79,9 @@ const stepCodeModifyGenerationNodePrompt = `您是一位專業的軟體工程師
 }
 """
 記住，你的目標是撰寫出用戶本步驟理解完畢後的程式碼
-`;
-
+請使用台灣繁體中文撰寫
+`,
+};
 export const requestPromptTemplate = (
   fullCode: string,
   codeParagraphs: {
@@ -61,32 +99,31 @@ export const requestPromptTemplate = (
 
   const codeText = getCodeModuleText(fullCode, usedCodeParagraphs);
 
-  return `
-以下是本步驟指引，請務必遵循
-不要做出任何超出指引範圍的修改
+  return `Below is the instruction for this step, please follow it strictly
+Do not make any modifications beyond the scope of the instruction
 <step_instruction>
 ${stepInstruction}
 </step_instruction>
 
-以下是下一步驟的方向，僅供程式架構設計參考
-切勿在本步驟套用該方向
+Below is the direction for the next step, for reference in program structure design only
+Do not apply this direction in the current step
 <next_step_instruction>
 ${nextStepInstruction}
-</next_step_instruction>
+</next_instruction>
 
-以下是目標程式碼的部分模塊，當中已經包含了你需要的部分
+Below are partial modules of the target code, which already include the parts you need
 <code> 
 ${codeText}
 </code>
 
-以下是用戶已經學會的程式碼：
+Below is the code that the user has already learned:
 <current_code>
 ${currentCode}
 </current_code>
 
-你是在用戶已經學會的程式碼的基礎上，撰寫出用戶本步驟理解完畢後的程式碼
-所以記得將用戶已經學會的程式碼，也一併寫入
-目標程式碼可能並不完整，但這無妨，你只需要專注於本步驟的程式碼即可
+You are writing the code that the user will understand after completing this step, based on the code they have already learned
+So remember to include the code that the user has already learned as well
+The target code may not be complete, but that's okay, you only need to focus on the code for this step
 `;
 };
 
@@ -109,6 +146,7 @@ interface StepCodeModifyGenerationOptions {
   nextStepInstruction: string;
   isLastStep: boolean;
   stepIndex: number;
+  locale: "en" | "zh-TW";
 }
 
 async function createStepCodeModifyGenerationNode({
@@ -121,6 +159,7 @@ async function createStepCodeModifyGenerationNode({
   nextStepInstruction,
   isLastStep,
   stepIndex,
+  locale,
 }: StepCodeModifyGenerationOptions) {
   try {
     const llmHistoryId = randomUUID();
@@ -134,7 +173,7 @@ async function createStepCodeModifyGenerationNode({
       nextStepInstruction
     );
     const response = await agent<z.infer<typeof responseSchema>>({
-      prompt: stepCodeModifyGenerationNodePrompt,
+      prompt: prompt[locale],
       responseSchema,
       messages: [
         {
@@ -148,7 +187,7 @@ async function createStepCodeModifyGenerationNode({
           nodeType: nodeName,
           llmHistoryId,
           newContent,
-          prompt: stepCodeModifyGenerationNodePrompt,
+          prompt: prompt[locale],
           input,
           stepIndex,
         });
@@ -178,7 +217,7 @@ async function createStepCodeModifyGenerationNode({
         id: llmHistoryId,
         nodeType: nodeName,
         response: JSON.stringify(response),
-        prompt: stepCodeModifyGenerationNodePrompt,
+        prompt: prompt[locale],
         input,
         stepIndex,
       },

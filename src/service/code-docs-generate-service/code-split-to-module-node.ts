@@ -7,32 +7,31 @@ import agent from "./agent";
 import yUpsertLLMHistory from "./y-upsert-llm-history";
 
 const nodeName = "codeSplitToModule";
-const prompt = `您是一位專業的軟體工程師，專注於結構化程式碼。
-你的任務是：將程式碼拆分成多個段落，並且生成每個段落的說明，降低其他軟體工程師的理解負擔。
+const prompt = `You are a professional software engineer focused on structuring code.
+Your task is to: Split the code into multiple paragraphs and generate a description for each paragraph, reducing the cognitive load for other software engineers.
 
-段落劃分：
-- 程式碼的每一行都有編碼；在劃分段落時，請直接指明行代碼。
-- 每個段落應專注於一個主要功能。
-- 可以根據本身函數、類別的邏輯做切割
-- 每一部分應該限制在 200 行內。
-- 審查一致性和準確性。
+Paragraph division:
+- Each line of code has an encoding; when dividing paragraphs, please directly specify the line code.
+- Each paragraph should focus on one main function.
+- Can be split based on the logic of functions or classes themselves
+- Each part should be limited to 200 lines.
+- Review for consistency and accuracy.
 
 
-輸出格式：
+Output format:
 """
 {
   "codeParagraphs": [
     {
-      "title": "<段落標題>",
-      "startLine": <開始行數>
+      "title": "<paragraph title>",
+      "startLine": <start line number>
     }
   ]
 }
 """
 
-目標：創建清晰、準確的結構以增強理解。
+Goal: Create clear, accurate structures to enhance understanding.
 `;
-
 const responseSchema = z.object({
   codeParagraphs: z.array(
     z.object({

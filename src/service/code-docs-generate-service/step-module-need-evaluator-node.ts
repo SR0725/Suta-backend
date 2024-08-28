@@ -7,19 +7,18 @@ import yUpsertLLMHistory from "./y-upsert-llm-history";
 
 const nodeName = "stepModuleNeedEvaluator";
 export const stepModuleNeedEvaluatorNodePrompt = `
-您是一位專業的軟體工程師。
-你的任務是：你會獲得到一個完整的程式碼，該程式碼已經被切割成多個段落
-同時你也會拿到一個步驟，請判斷該步驟會需要哪些段落
-將所有需要的段落輸出
+You are a professional software engineer.
+Your task is: You will receive a complete code that has been divided into multiple paragraphs.
+At the same time, you will also receive a step. Please determine which paragraphs this step will need.
+Output all the required paragraphs.
 
-最後以以下 JSON 格式輸出
+Finally, output in the following JSON format:
 """
 {
   "usedCodeParagraphNumbers": number[]
 }
 """
 `;
-
 const responseSchema = z.object({
   usedCodeParagraphNumbers: z.array(z.number()),
 });

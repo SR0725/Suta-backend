@@ -13,6 +13,7 @@ server.withTypeProvider<ZodTypeProvider>().route({
   schema: {
     body: z.object({
       code: z.string().min(1).max(10000),
+      locale: z.enum(["zh-TW", "en"]),
     }),
     response: {
       200: z.object({
@@ -22,6 +23,7 @@ server.withTypeProvider<ZodTypeProvider>().route({
   },
   async handler(req, res) {
     const code = req.body.code;
+    const locale = req.body.locale;
     if (!req.cookies.authorization) {
       throw new Error("No Authorization");
     }
@@ -37,7 +39,7 @@ server.withTypeProvider<ZodTypeProvider>().route({
         `You have reached the limit of ${MAX_CODE_DOCS_GENERATION_PER_DAY} code docs generation per day\n每日最多只能生成 ${MAX_CODE_DOCS_GENERATION_PER_DAY} 份程式碼文件`
       );
     }
-    const response = await codeDocsGenerateService(account, code);
+    const response = await codeDocsGenerateService(account, code, locale);
     res.send({ docsId: response });
   },
 });

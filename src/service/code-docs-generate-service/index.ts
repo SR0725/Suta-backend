@@ -12,7 +12,12 @@ import getCodeModuleText from "./get-code-module-text";
 import createInitialCodeArchitectureNode from "./initial-code-architecture-node";
 import createInitialPurposeNode from "./initial-purpose-node";
 
-async function startNodes(docsId: string, code: string, crdtDoc: CRDTDoc) {
+async function startNodes(
+  docsId: string,
+  code: string,
+  crdtDoc: CRDTDoc,
+  locale: "zh-TW" | "en"
+) {
   // 設定 doc isGenerating
   const yIsGenerating = crdtDoc.doc.getText("isGenerating");
   yIsGenerating.insert(0, "true");
@@ -21,6 +26,7 @@ async function startNodes(docsId: string, code: string, crdtDoc: CRDTDoc) {
     docsId,
     code,
     yDoc: crdtDoc.doc,
+    locale,
   });
 
   // 分割程式碼
@@ -51,6 +57,7 @@ async function startNodes(docsId: string, code: string, crdtDoc: CRDTDoc) {
     docsId,
     code,
     yDoc: crdtDoc.doc,
+    locale,
   });
 
   if (!initialCodeArchitecture) {
@@ -65,6 +72,7 @@ async function startNodes(docsId: string, code: string, crdtDoc: CRDTDoc) {
     codeParagraphs: codeParagraphs,
     instructions: bigStepDirection.instructions,
     yDoc: crdtDoc.doc,
+    locale,
   });
 
   // 完成工作
@@ -78,11 +86,15 @@ async function startNodes(docsId: string, code: string, crdtDoc: CRDTDoc) {
   yIsGenerating.insert(0, "false");
 }
 
-async function codeDocsGenerateService(account: Account, code: string) {
+async function codeDocsGenerateService(
+  account: Account,
+  code: string,
+  locale: "zh-TW" | "en"
+) {
   const docsId = randomUUID();
   const crdtDoc = createCRDTDoc(docsId);
   await createEmptyCodeDocs(docsId, code, account);
-  startNodes(docsId, code, crdtDoc)
+  startNodes(docsId, code, crdtDoc, locale)
     .then(() => {
       console.log("startNodes done");
     })
