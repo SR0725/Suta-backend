@@ -1,11 +1,13 @@
 import type { Collection } from "mongodb";
 import { MongoClient } from "mongodb";
 import type { Account } from "@/models/account";
+import type { AccountApiKey } from "@/models/account-api-key";
 import type { CodeDocs } from "@/models/code-docs";
 
 export interface MongoCollections {
   codeDocsCollection: Collection<CodeDocs>;
   accountCollection: Collection<Account>;
+  accountApiKeyCollection: Collection<AccountApiKey>;
 }
 
 export let defaultMongoCollections: MongoCollections | null = null;
@@ -24,10 +26,13 @@ async function createMongoClientCollection(): Promise<MongoCollections> {
   const mainDb = client.db(mainDbName);
   const codeDocsCollection = mainDb.collection<CodeDocs>("codeDocs");
   const accountCollection = mainDb.collection<Account>("account");
+  const accountApiKeyCollection =
+    mainDb.collection<AccountApiKey>("accountApiKey");
 
   return {
     codeDocsCollection,
     accountCollection,
+    accountApiKeyCollection,
   };
 }
 

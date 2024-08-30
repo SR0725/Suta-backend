@@ -121,13 +121,14 @@ const responseSchema = zod_1.z.object({
     explanation: zod_1.z.string(),
     conclusion: zod_1.z.string().optional(),
 });
-async function createStepCodeModifyGenerationNode({ yDoc, codeParagraphs, fullCode, usedCodeParagraphNumbers, currentCode, stepInstruction, nextStepInstruction, isLastStep, stepIndex, locale, }) {
+async function createStepCodeModifyGenerationNode({ yDoc, codeParagraphs, fullCode, usedCodeParagraphNumbers, currentCode, stepInstruction, nextStepInstruction, isLastStep, stepIndex, locale, apiKey, }) {
     try {
         const llmHistoryId = (0, crypto_1.randomUUID)();
         const input = (0, exports.requestPromptTemplate)(fullCode, codeParagraphs, usedCodeParagraphNumbers, currentCode, stepInstruction, nextStepInstruction);
         const response = await (0, agent_1.default)({
             prompt: prompt[locale],
             responseSchema,
+            apiKey,
             messages: [
                 {
                     role: "user",

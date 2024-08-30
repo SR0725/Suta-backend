@@ -7,11 +7,13 @@ interface AgentProps<T> {
   prompt: string;
   messages: ChatCompletionMessageParam[];
   responseSchema?: z.ZodType<T>;
-  handleGenerate: (newContent: string) => void;
+  handleGenerate?: (newContent: string) => void;
   model?: string;
   maxTokens?: number;
+  temperature?: number;
   retryTimes?: number;
   _alreadyRetryTimes?: number;
+  apiKey: string;
 }
 
 async function agent<T = string>(props: AgentProps<T>): Promise<T> {
@@ -23,14 +25,16 @@ async function agent<T = string>(props: AgentProps<T>): Promise<T> {
     model = "gpt-4o-mini",
     maxTokens = 4096,
     retryTimes = 3,
+    temperature = 0,
     _alreadyRetryTimes = 0,
+    apiKey,
   } = props;
-  const client = createOpenAI();
+  const client = createOpenAI(apiKey);
   const stream = await client.chat.completions.create({
     model: model,
     messages: [{ role: "system", content: prompt }, ...messages],
     max_tokens: maxTokens,
-    temperature: 0,
+    temperature: temperature,
     stream: true,
     ...(responseSchema
       ? {
@@ -43,7 +47,7 @@ async function agent<T = string>(props: AgentProps<T>): Promise<T> {
   for await (const chunk of stream) {
     const content = chunk.choices[0]?.delta?.content || "";
     resultContent += content;
-    handleGenerate(content);
+    handleGenerate?.(content);
   }
 
   try {

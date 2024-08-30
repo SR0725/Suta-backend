@@ -11,12 +11,14 @@ import createEntireStepNode from "./entire-step-node";
 import getCodeModuleText from "./get-code-module-text";
 import createInitialCodeArchitectureNode from "./initial-code-architecture-node";
 import createInitialPurposeNode from "./initial-purpose-node";
+import testOpenAiApiKeyWork from "./test-openapi-key-work";
 
 async function startNodes(
   docsId: string,
   code: string,
   crdtDoc: CRDTDoc,
-  locale: "zh-TW" | "en"
+  locale: "zh-TW" | "en",
+  apiKey: string
 ) {
   // 設定 doc isGenerating
   const yIsGenerating = crdtDoc.doc.getText("isGenerating");
@@ -27,6 +29,7 @@ async function startNodes(
     code,
     yDoc: crdtDoc.doc,
     locale,
+    apiKey,
   });
 
   // 分割程式碼
@@ -34,6 +37,7 @@ async function startNodes(
     docsId,
     code,
     yDoc: crdtDoc.doc,
+    apiKey,
   });
 
   if (!codeSplitToModuleResult) {
@@ -46,6 +50,7 @@ async function startNodes(
     docsId,
     yDoc: crdtDoc.doc,
     codeModuleText: getCodeModuleText(code, codeParagraphs),
+    apiKey,
   });
 
   if (!bigStepDirection) {
@@ -58,6 +63,7 @@ async function startNodes(
     code,
     yDoc: crdtDoc.doc,
     locale,
+    apiKey,
   });
 
   if (!initialCodeArchitecture) {
@@ -73,6 +79,7 @@ async function startNodes(
     instructions: bigStepDirection.instructions,
     yDoc: crdtDoc.doc,
     locale,
+    apiKey,
   });
 
   // 完成工作
@@ -89,12 +96,26 @@ async function startNodes(
 async function codeDocsGenerateService(
   account: Account,
   code: string,
-  locale: "zh-TW" | "en"
+  locale: "zh-TW" | "en",
+  apiKey: string | undefined | null
 ) {
   const docsId = randomUUID();
   const crdtDoc = createCRDTDoc(docsId);
+
+  const useApiKey = apiKey || process.env.OPENAI_API_KEY || "";
+  console.log(apiKey ? "有 apiKey" : "沒有 apiKey");
+  if (apiKey) {
+    try {
+      await testOpenAiApiKeyWork(apiKey);
+    } catch (error) {
+      throw new Error(
+        "您個人設定的 OpenAI API Key 無效，請重新確認設定，或者移除他"
+      );
+    }
+  }
+
   await createEmptyCodeDocs(docsId, code, account);
-  startNodes(docsId, code, crdtDoc, locale)
+  startNodes(docsId, code, crdtDoc, locale, useApiKey)
     .then(() => {
       console.log("startNodes done");
     })

@@ -47,12 +47,14 @@ interface BigStepDirectionDefineNodeOptions {
   docsId: string;
   codeModuleText: string;
   yDoc: Y.Doc;
+  apiKey: string;
 }
 
 async function createBigStepDirectionDefineNode({
   docsId,
   codeModuleText,
   yDoc,
+  apiKey,
 }: BigStepDirectionDefineNodeOptions) {
   try {
     const llmHistoryId = randomUUID();
@@ -60,6 +62,7 @@ async function createBigStepDirectionDefineNode({
     const response = await agent<z.infer<typeof responseSchema>>({
       prompt,
       responseSchema,
+      apiKey,
       messages: [
         {
           role: "user",

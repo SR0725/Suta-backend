@@ -26,7 +26,7 @@ Finally, output in the following JSON format:
 const responseSchema = zod_1.z.object({
     usedCodeParagraphNumbers: zod_1.z.array(zod_1.z.number()),
 });
-async function createStepModuleNeedEvaluatorNode({ yDoc, codeParagraphs, fullCode, stepInstruction, stepIndex, }) {
+async function createStepModuleNeedEvaluatorNode({ yDoc, codeParagraphs, fullCode, stepInstruction, stepIndex, apiKey, }) {
     try {
         const llmHistoryId = (0, crypto_1.randomUUID)();
         const codeParagraphText = (0, get_code_module_text_1.default)(fullCode, codeParagraphs);
@@ -52,6 +52,7 @@ async function createStepModuleNeedEvaluatorNode({ yDoc, codeParagraphs, fullCod
                     stepIndex,
                 });
             },
+            apiKey,
         });
         return {
             response,

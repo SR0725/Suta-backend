@@ -58,6 +58,7 @@ interface CreateInitialPurposeNodeOptions {
   code: string;
   yDoc: Y.Doc;
   locale: string;
+  apiKey: string;
 }
 
 async function createInitialPurposeNode({
@@ -65,6 +66,7 @@ async function createInitialPurposeNode({
   code,
   yDoc,
   locale,
+  apiKey,
 }: CreateInitialPurposeNodeOptions) {
   const llmHistoryId = randomUUID();
   try {
@@ -72,6 +74,7 @@ async function createInitialPurposeNode({
     const response = await agent<z.infer<typeof responseSchema>>({
       prompt: promptObject[locale as "en" | "zh-TW"],
       responseSchema,
+      apiKey,
       messages: [
         {
           role: "user",

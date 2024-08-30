@@ -44,13 +44,14 @@ Goal: Create a clear and accurate flow that allows users to write out the entire
 const responseSchema = zod_1.z.object({
     instructions: zod_1.z.array(zod_1.z.string()),
 });
-async function createBigStepDirectionDefineNode({ docsId, codeModuleText, yDoc, }) {
+async function createBigStepDirectionDefineNode({ docsId, codeModuleText, yDoc, apiKey, }) {
     try {
         const llmHistoryId = (0, crypto_1.randomUUID)();
         // 生成段落模塊
         const response = await (0, agent_1.default)({
             prompt,
             responseSchema,
+            apiKey,
             messages: [
                 {
                     role: "user",

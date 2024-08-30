@@ -7,7 +7,7 @@ const crypto_1 = require("crypto");
 const step_code_modify_generation_node_1 = __importDefault(require("./step-code-modify-generation-node"));
 const step_module_need_evaluator_node_1 = __importDefault(require("./step-module-need-evaluator-node"));
 // 創建單一步驟節點的函式
-async function createStepNode({ yDoc, fullCode, currentCode, codeParagraphs, stepInstruction, nextStepInstruction, stepIndex, isLastStep, locale, }) {
+async function createStepNode({ yDoc, fullCode, currentCode, codeParagraphs, stepInstruction, nextStepInstruction, stepIndex, isLastStep, locale, apiKey, }) {
     // 生成唯一的步驟 ID
     const stepId = (0, crypto_1.randomUUID)();
     // 評估步驟需求模塊
@@ -17,6 +17,7 @@ async function createStepNode({ yDoc, fullCode, currentCode, codeParagraphs, ste
         fullCode,
         stepInstruction,
         stepIndex,
+        apiKey,
     });
     if (!stepModuleNeedEvaluatorNodeResult) {
         throw new Error("找不到步驟需求模塊");
@@ -33,6 +34,7 @@ async function createStepNode({ yDoc, fullCode, currentCode, codeParagraphs, ste
         isLastStep,
         stepIndex,
         locale,
+        apiKey,
     });
     if (!updatedCodeNodeResult) {
         throw new Error("找不到更新後的程式碼");

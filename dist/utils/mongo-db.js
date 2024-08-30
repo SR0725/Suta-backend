@@ -14,9 +14,11 @@ async function createMongoClientCollection() {
     const mainDb = client.db(mainDbName);
     const codeDocsCollection = mainDb.collection("codeDocs");
     const accountCollection = mainDb.collection("account");
+    const accountApiKeyCollection = mainDb.collection("accountApiKey");
     return {
         codeDocsCollection,
         accountCollection,
+        accountApiKeyCollection,
     };
 }
 async function getDefaultMongoClientCollection() {

@@ -37,7 +37,7 @@ Remember, the goal is to provide the simplest starting point possible for beginn
 const responseSchema = zod_1.z.object({
     code: zod_1.z.string(),
 });
-async function createInitialCodeArchitectureNode({ docsId, code, yDoc, locale, }) {
+async function createInitialCodeArchitectureNode({ docsId, code, yDoc, locale, apiKey, }) {
     const llmHistoryId = (0, crypto_1.randomUUID)();
     const cardId = (0, crypto_1.randomUUID)();
     try {
@@ -45,6 +45,7 @@ async function createInitialCodeArchitectureNode({ docsId, code, yDoc, locale, }
         const response = await (0, agent_1.default)({
             prompt,
             responseSchema,
+            apiKey,
             messages: [
                 {
                     role: "user",

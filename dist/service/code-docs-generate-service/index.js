@@ -15,7 +15,8 @@ const entire_step_node_1 = __importDefault(require("./entire-step-node"));
 const get_code_module_text_1 = __importDefault(require("./get-code-module-text"));
 const initial_code_architecture_node_1 = __importDefault(require("./initial-code-architecture-node"));
 const initial_purpose_node_1 = __importDefault(require("./initial-purpose-node"));
-async function startNodes(docsId, code, crdtDoc, locale) {
+const test_openapi_key_work_1 = __importDefault(require("./test-openapi-key-work"));
+async function startNodes(docsId, code, crdtDoc, locale, apiKey) {
     // 設定 doc isGenerating
     const yIsGenerating = crdtDoc.doc.getText("isGenerating");
     yIsGenerating.insert(0, "true");
@@ -25,12 +26,14 @@ async function startNodes(docsId, code, crdtDoc, locale) {
         code,
         yDoc: crdtDoc.doc,
         locale,
+        apiKey,
     });
     // 分割程式碼
     const codeSplitToModuleResult = await (0, code_split_to_module_node_1.default)({
         docsId,
         code,
         yDoc: crdtDoc.doc,
+        apiKey,
     });
     if (!codeSplitToModuleResult) {
         throw new Error("Code split to module not found");
@@ -41,6 +44,7 @@ async function startNodes(docsId, code, crdtDoc, locale) {
         docsId,
         yDoc: crdtDoc.doc,
         codeModuleText: (0, get_code_module_text_1.default)(code, codeParagraphs),
+        apiKey,
     });
     if (!bigStepDirection) {
         throw new Error("Big step direction not found");
@@ -51,6 +55,7 @@ async function startNodes(docsId, code, crdtDoc, locale) {
         code,
         yDoc: crdtDoc.doc,
         locale,
+        apiKey,
     });
     if (!initialCodeArchitecture) {
         throw new Error("Initial code architecture not found");
@@ -64,6 +69,7 @@ async function startNodes(docsId, code, crdtDoc, locale) {
         instructions: bigStepDirection.instructions,
         yDoc: crdtDoc.doc,
         locale,
+        apiKey,
     });
     // 完成工作
     const codeDocs = await (0, get_code_docs_by_id_1.default)(docsId);
@@ -75,12 +81,22 @@ async function startNodes(docsId, code, crdtDoc, locale) {
     yIsGenerating.delete(0, yIsGenerating.length);
     yIsGenerating.insert(0, "false");
 }
-async function codeDocsGenerateService(account, code, locale) {
+async function codeDocsGenerateService(account, code, locale, apiKey) {
     var _a, _b;
     const docsId = (0, crypto_1.randomUUID)();
     const crdtDoc = (0, crdt_doc_1.default)(docsId);
+    const useApiKey = apiKey || process.env.OPENAI_API_KEY || "";
+    console.log(apiKey ? "有 apiKey" : "沒有 apiKey");
+    if (apiKey) {
+        try {
+            await (0, test_openapi_key_work_1.default)(apiKey);
+        }
+        catch (error) {
+            throw new Error("您個人設定的 OpenAI API Key 無效，請重新確認設定，或者移除他");
+        }
+    }
     await (0, create_empty_code_docs_1.default)(docsId, code, account);
-    startNodes(docsId, code, crdtDoc, locale)
+    startNodes(docsId, code, crdtDoc, locale, useApiKey)
         .then(() => {
         console.log("startNodes done");
     })

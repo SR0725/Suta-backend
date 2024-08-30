@@ -147,6 +147,7 @@ interface StepCodeModifyGenerationOptions {
   isLastStep: boolean;
   stepIndex: number;
   locale: "en" | "zh-TW";
+  apiKey: string;
 }
 
 async function createStepCodeModifyGenerationNode({
@@ -160,6 +161,7 @@ async function createStepCodeModifyGenerationNode({
   isLastStep,
   stepIndex,
   locale,
+  apiKey,
 }: StepCodeModifyGenerationOptions) {
   try {
     const llmHistoryId = randomUUID();
@@ -175,6 +177,7 @@ async function createStepCodeModifyGenerationNode({
     const response = await agent<z.infer<typeof responseSchema>>({
       prompt: prompt[locale],
       responseSchema,
+      apiKey,
       messages: [
         {
           role: "user",

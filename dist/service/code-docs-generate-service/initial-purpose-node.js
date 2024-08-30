@@ -53,13 +53,14 @@ const responseSchema = zod_1.z.object({
     description: zod_1.z.string(),
     language: zod_1.z.string(),
 });
-async function createInitialPurposeNode({ docsId, code, yDoc, locale, }) {
+async function createInitialPurposeNode({ docsId, code, yDoc, locale, apiKey, }) {
     const llmHistoryId = (0, crypto_1.randomUUID)();
     try {
         // 生成標題和描述
         const response = await (0, agent_1.default)({
             prompt: promptObject[locale],
             responseSchema,
+            apiKey,
             messages: [
                 {
                     role: "user",

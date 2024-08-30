@@ -45,12 +45,14 @@ interface CodeSplitToModuleNodeOptions {
   docsId: string;
   code: string;
   yDoc: Y.Doc;
+  apiKey: string;
 }
 
 async function createCodeSplitToModuleNode({
   docsId,
   code,
   yDoc,
+  apiKey,
 }: CodeSplitToModuleNodeOptions) {
   const llmHistoryId = randomUUID();
   try {
@@ -58,6 +60,7 @@ async function createCodeSplitToModuleNode({
     const response = await agent<z.infer<typeof responseSchema>>({
       prompt,
       responseSchema,
+      apiKey,
       messages: [
         {
           role: "user",

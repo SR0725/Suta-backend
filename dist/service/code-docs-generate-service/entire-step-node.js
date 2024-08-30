@@ -8,7 +8,7 @@ const update_code_docs_1 = __importDefault(require("@/repositories/code-docs/upd
 const step_node_1 = __importDefault(require("./step-node"));
 const y_push_card_1 = __importDefault(require("./y-push-card"));
 // 創建總體步驟節點的函式
-async function createEntireStepNode({ docsId, yDoc, fullCode, initialCode, codeParagraphs, instructions, locale, }) {
+async function createEntireStepNode({ docsId, yDoc, fullCode, initialCode, codeParagraphs, instructions, locale, apiKey, }) {
     let currentCode = initialCode;
     const codeStepCardList = [];
     const newLLMHistoryList = [];
@@ -26,6 +26,7 @@ async function createEntireStepNode({ docsId, yDoc, fullCode, initialCode, codeP
             stepIndex,
             isLastStep: stepIndex === instructions.length - 1,
             locale,
+            apiKey,
         });
         currentCode = step.updatedCode;
         // 將步驟卡片推送到 Yjs 文件

@@ -12,9 +12,9 @@ const openai_1 = require("@/utils/openai");
 async function agent(props) {
     var _a, e_1, _b, _c;
     var _d, _e;
-    const { prompt, messages, responseSchema, handleGenerate, model = "gpt-4o-mini", maxTokens = 4096, retryTimes = 3, _alreadyRetryTimes = 0, } = props;
-    const client = (0, openai_1.createOpenAI)();
-    const stream = await client.chat.completions.create(Object.assign({ model: model, messages: [{ role: "system", content: prompt }, ...messages], max_tokens: maxTokens, temperature: 0, stream: true }, (responseSchema
+    const { prompt, messages, responseSchema, handleGenerate, model = "gpt-4o-mini", maxTokens = 4096, retryTimes = 3, temperature = 0, _alreadyRetryTimes = 0, apiKey, } = props;
+    const client = (0, openai_1.createOpenAI)(apiKey);
+    const stream = await client.chat.completions.create(Object.assign({ model: model, messages: [{ role: "system", content: prompt }, ...messages], max_tokens: maxTokens, temperature: temperature, stream: true }, (responseSchema
         ? {
             response_format: (0, zod_1.zodResponseFormat)(responseSchema, "response-format"),
         }
@@ -27,7 +27,7 @@ async function agent(props) {
             const chunk = _c;
             const content = ((_e = (_d = chunk.choices[0]) === null || _d === void 0 ? void 0 : _d.delta) === null || _e === void 0 ? void 0 : _e.content) || "";
             resultContent += content;
-            handleGenerate(content);
+            handleGenerate === null || handleGenerate === void 0 ? void 0 : handleGenerate(content);
         }
     }
     catch (e_1_1) { e_1 = { error: e_1_1 }; }

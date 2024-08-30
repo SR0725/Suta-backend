@@ -42,6 +42,7 @@ interface CreateInitialCodeArchitectureNodeOptions {
   code: string;
   yDoc: Y.Doc;
   locale: "zh-TW" | "en";
+  apiKey: string;
 }
 
 async function createInitialCodeArchitectureNode({
@@ -49,6 +50,7 @@ async function createInitialCodeArchitectureNode({
   code,
   yDoc,
   locale,
+  apiKey,
 }: CreateInitialCodeArchitectureNodeOptions) {
   const llmHistoryId = randomUUID();
   const cardId = randomUUID();
@@ -57,6 +59,7 @@ async function createInitialCodeArchitectureNode({
     const response = await agent<z.infer<typeof responseSchema>>({
       prompt,
       responseSchema,
+      apiKey,
       messages: [
         {
           role: "user",

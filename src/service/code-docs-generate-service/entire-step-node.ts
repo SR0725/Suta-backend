@@ -17,6 +17,7 @@ interface EntireStepNodeOptions {
   }[];
   instructions: string[];
   locale: "zh-TW" | "en";
+  apiKey: string;
 }
 
 // 創建總體步驟節點的函式
@@ -28,6 +29,7 @@ async function createEntireStepNode({
   codeParagraphs,
   instructions,
   locale,
+  apiKey,
 }: EntireStepNodeOptions) {
   let currentCode = initialCode;
   const codeStepCardList: CodeStepCard[] = [];
@@ -48,6 +50,7 @@ async function createEntireStepNode({
       stepIndex,
       isLastStep: stepIndex === instructions.length - 1,
       locale,
+      apiKey,
     });
 
     currentCode = step.updatedCode;

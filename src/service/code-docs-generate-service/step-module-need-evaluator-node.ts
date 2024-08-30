@@ -32,6 +32,7 @@ interface stepModuleNeedEvaluatorOptions {
   }[];
   fullCode: string;
   stepInstruction: string;
+  apiKey: string;
 }
 
 async function createStepModuleNeedEvaluatorNode({
@@ -40,6 +41,7 @@ async function createStepModuleNeedEvaluatorNode({
   fullCode,
   stepInstruction,
   stepIndex,
+  apiKey,
 }: stepModuleNeedEvaluatorOptions) {
   try {
     const llmHistoryId = randomUUID();
@@ -66,6 +68,7 @@ async function createStepModuleNeedEvaluatorNode({
           stepIndex,
         });
       },
+      apiKey,
     });
 
     return {

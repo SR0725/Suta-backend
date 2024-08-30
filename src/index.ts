@@ -1,4 +1,7 @@
 import "module-alias/register";
+import "@/routes/account-api-key-delete-route";
+import "@/routes/account-api-key-get-route";
+import "@/routes/account-api-key-insert-route";
 import "@/routes/account-user-info-route";
 import "@/routes/code-docs-delete-route";
 import "@/routes/code-docs-generate-route";

@@ -1,6 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 require("module-alias/register");
+require("@/routes/account-api-key-delete-route");
+require("@/routes/account-api-key-get-route");
+require("@/routes/account-api-key-insert-route");
 require("@/routes/account-user-info-route");
 require("@/routes/code-docs-delete-route");
 require("@/routes/code-docs-generate-route");

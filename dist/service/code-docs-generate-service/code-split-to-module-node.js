@@ -41,13 +41,14 @@ const responseSchema = zod_1.z.object({
         startLine: zod_1.z.number(),
     })),
 });
-async function createCodeSplitToModuleNode({ docsId, code, yDoc, }) {
+async function createCodeSplitToModuleNode({ docsId, code, yDoc, apiKey, }) {
     const llmHistoryId = (0, crypto_1.randomUUID)();
     try {
         // 生成段落模塊
         const response = await (0, agent_1.default)({
             prompt,
             responseSchema,
+            apiKey,
             messages: [
                 {
                     role: "user",

@@ -18,6 +18,7 @@ interface StepNodeOptions {
   stepIndex: number;
   isLastStep: boolean;
   locale: "zh-TW" | "en";
+  apiKey: string;
 }
 
 // 創建單一步驟節點的函式
@@ -31,6 +32,7 @@ async function createStepNode({
   stepIndex,
   isLastStep,
   locale,
+  apiKey,
 }: StepNodeOptions) {
   // 生成唯一的步驟 ID
   const stepId = randomUUID();
@@ -43,6 +45,7 @@ async function createStepNode({
       fullCode,
       stepInstruction,
       stepIndex,
+      apiKey,
     });
 
   if (!stepModuleNeedEvaluatorNodeResult) {
@@ -62,6 +65,7 @@ async function createStepNode({
     isLastStep,
     stepIndex,
     locale,
+    apiKey,
   });
 
   if (!updatedCodeNodeResult) {
