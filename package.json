@@ -3,6 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "packageManager": "pnpm@9.4.0",
+  "pnpm": {
+    "overrides": {
+      "postcss": "8.5.25"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node -r module-alias/register -r dotenv/config dist/index.js",
